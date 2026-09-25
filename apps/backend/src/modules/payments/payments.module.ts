@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { StripeService } from './stripe.service';
+import { PaymentsWebhookService } from './payments-webhook.service';
 import { Payment, PaymentSchema } from './schemas/payment.schema';
 import {
   ProcessedEvent,
@@ -28,7 +29,7 @@ import { SocketModule } from '../socket/socket.module';
     ]),
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService, StripeService],
-  exports: [PaymentsService, StripeService],
+  providers: [PaymentsService, StripeService, PaymentsWebhookService],
+  exports: [PaymentsService, StripeService, PaymentsWebhookService],
 })
 export class PaymentsModule {}

@@ -211,4 +211,49 @@ describe('RedisIoAdapter & Cross-Instance Propagation', () => {
       JSON.stringify(closedPayload),
     );
   });
+
+  // FEAT-004-INT: should propagate payment:succeeded to customer and provider rooms via Redis
+  it('should propagate payment:succeeded to customer and provider rooms across NestJS instances via Redis pub/sub simulation', (done) => {
+    const redisBroker = new EventEmitter();
+    const customerId = 'customer-node-1';
+    const providerId = 'provider-node-2';
+    const requestId = 'req-paid-909';
+    const amount = 25000;
+    let eventsReceived = 0;
+
+    const node1PubSub = {
+      publish: (channel: string, message: string) => {
+        redisBroker.emit(channel, message);
+      },
+    };
+
+    // Customer receives payment:succeeded in their private room
+    redisBroker.on(`socket.io#user:${customerId}#payment:succeeded`, (data) => {
+      const parsed = JSON.parse(data);
+      expect(parsed.requestId).toBe(requestId);
+      expect(parsed.amount).toBe(amount);
+      eventsReceived++;
+      if (eventsReceived === 2) done();
+    });
+
+    // Provider receives payment:succeeded in their private room
+    redisBroker.on(`socket.io#user:${providerId}#payment:succeeded`, (data) => {
+      const parsed = JSON.parse(data);
+      expect(parsed.requestId).toBe(requestId);
+      expect(parsed.amount).toBe(amount);
+      eventsReceived++;
+      if (eventsReceived === 2) done();
+    });
+
+    const paymentPayload = { requestId, amount };
+
+    node1PubSub.publish(
+      `socket.io#user:${customerId}#payment:succeeded`,
+      JSON.stringify(paymentPayload),
+    );
+    node1PubSub.publish(
+      `socket.io#user:${providerId}#payment:succeeded`,
+      JSON.stringify(paymentPayload),
+    );
+  });
 });

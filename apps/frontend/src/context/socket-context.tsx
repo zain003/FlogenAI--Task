@@ -11,6 +11,19 @@ import React, {
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './auth-context';
 
+export interface PaymentSucceededPayload {
+  requestId: string;
+  amount: number;
+}
+
+export interface ServerToClientEvents {
+  'payment:succeeded': (payload: PaymentSucceededPayload) => void;
+  'request:created': (payload: { request: any }) => void;
+  'offer:created': (payload: { offer: any; requestTitle: string }) => void;
+  'offer:accepted': (payload: { offer: any; requestId: string }) => void;
+  'request:closed': (payload: { requestId: string }) => void;
+}
+
 export interface SocketContextValue {
   socket: Socket | null;
   isConnected: boolean;

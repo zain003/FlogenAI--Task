@@ -9,6 +9,7 @@ import * as request from 'supertest';
 import * as crypto from 'crypto';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
+import { PaymentsWebhookService } from './payments-webhook.service';
 import { StripeService } from './stripe.service';
 import { Payment } from './schemas/payment.schema';
 import { ProcessedEvent } from './schemas/processed-event.schema';
@@ -192,6 +193,7 @@ describe('Stripe Webhook Verification & Idempotency Engine Suite', () => {
       controllers: [PaymentsController],
       providers: [
         PaymentsService,
+        PaymentsWebhookService,
         { provide: StripeService, useValue: mockStripeService },
         { provide: MarketplaceGateway, useValue: mockGateway },
         { provide: getModelToken(Payment.name), useValue: mockPaymentModel },

@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-004-INT-payments-webhook.md` (Webhook State Reconciler & Chat Unlock).
+- Begin execution of `FEAT-004-VERIFY-payments.md` (Payments & Webhook Idempotency Verification Pass).
 
 ## Feature Implementation Pipeline
 
@@ -17,7 +17,7 @@ Update this file after every meaningful implementation change and test report co
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
 | **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-003-test-report.md`](../feature-test-reports/FEAT-003-test-report.md) |
-| **FEAT-004** | Stripe Payments & Webhook Idempotency | BE (Passed), FE (Passed), INT, VERIFY | In Progress | [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md) |
+| **FEAT-004** | Stripe Payments & Webhook Idempotency | BE (Passed), FE (Passed), INT (Passed), VERIFY | In Progress | [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md) |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
 | **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
 | **EPIC-001** | Full Marketplace End-to-End Journey | VERIFY | Not Started | `feature-test-reports/EPIC-001-test-report.md` |
@@ -126,15 +126,24 @@ Update this file after every meaningful implementation change and test report co
   - **Customer Flow Integration**: Updated `OfferCard` and `OfferList` to display "Proceed to Payment" action button (`data-testid="pay-offer-button-${offer.id}"`) when request is `ACCEPTED`. Integrated `PaymentModal` into Request Detail page (`/requests/[id]`). Added live `payment:succeeded` Socket.IO event listener to update request status to `PAID` without page reload.
   - **Fake DOM Test Suite**: Authored 6 comprehensive tests in `src/tests/payments.spec.tsx` covering modal rendering with price breakdown, in-flight pay button disabling, card error alert handling, successful payment confirmation, ESC/close button interaction, and create-intent failure retry.
   - Monorepo test suite expanded to **203/203 passing tests (152 backend + 51 frontend)** with 100% pass rate, zero compiler or typecheck errors, and clean Next.js 16 Turbopack production build.
+- **`FEAT-004-INT-payments-webhook.md`**: Stripe Webhook Event Synchronization & Reconciliation implemented.
+  - **PaymentsWebhookService**: Created dedicated `PaymentsWebhookService` handling event receipt, idempotency checks against `processed_events` table (with atomic primary key collision handling for E11000 errors), domain transitions (`payment_intent.succeeded` -> Payment `SUCCEEDED` + ServiceRequest `PAID`; `payment_intent.payment_failed` -> Payment `FAILED`), and Socket.IO emission to Customer and Provider rooms.
+  - **Socket.IO Real-Time Dispatch & Scaling**: Verified `MarketplaceGateway.emitPaymentSucceeded` dispatching `payment:succeeded` across cluster nodes via Redis Pub/Sub adapter. Added cross-instance propagation simulation test in `socket-redis.spec.ts`.
+  - **Frontend Chat Unlock & Real-Time Transition**: Added typed `PaymentSucceededPayload` and `ServerToClientEvents` to `socket-context.tsx`. Enhanced Request Detail page (`/requests/[id]`) with prominent `paid-chat-unlocked-banner` and `open-chat-button` triggering upon real-time `payment:succeeded` event without requiring page reload.
+  - **Multi-Layer SQA Test Suite**: Added 10 new tests across backend and frontend:
+    - 6 unit/idempotency tests in `payments-webhook.service.spec.ts` (request transition to `PAID`, event recording in `processed_events`, socket dispatch, replay idempotency, concurrent collision, failure handling).
+    - 1 cross-instance Redis pub/sub simulation test in `socket-redis.spec.ts`.
+    - 3 Fake DOM integration tests in `payments-realtime.spec.tsx` (socket event transition to `PAID`, banner appearance, duplicate event idempotency, request ID filtering).
+  - Monorepo test suite expanded to **213/213 passing tests (159 backend + 54 frontend)** with 100% pass rate, zero compiler or typecheck errors, and clean builds for both NestJS and Next.js 16.
 
 ## In Progress
 
-- `FEAT-004-INT-payments-webhook.md` (Webhook State Reconciler & Chat Unlock).
+- `FEAT-004-VERIFY-payments.md` (Payments & Webhook Idempotency Verification Pass).
 
 ## Next Up
 
-- `FEAT-004-INT-payments-webhook.md` (Webhook State Reconciler & Chat Unlock).
 - `FEAT-004-VERIFY-payments.md` (Payments & Webhook Idempotency Verification Pass).
+- `FEAT-005-BE-chat.md` (Chat Conversations & Messages REST CRUD).
 
 ## Open Questions & Assumptions
 

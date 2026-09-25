@@ -19,6 +19,7 @@ import {
   ServiceRequestDocument,
 } from '../requests/schemas/service-request.schema';
 import { StripeService } from './stripe.service';
+import { PaymentsWebhookService } from './payments-webhook.service';
 import { MarketplaceGateway } from '../socket/socket.gateway';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { PaymentIntentResponseDto } from './dto/payment-intent-response.dto';
@@ -39,6 +40,7 @@ export class PaymentsService {
     private readonly requestModel: Model<ServiceRequestDocument>,
     private readonly stripeService: StripeService,
     private readonly marketplaceGateway: MarketplaceGateway,
+    private readonly paymentsWebhookService: PaymentsWebhookService,
   ) {}
 
   /**
@@ -158,88 +160,8 @@ export class PaymentsService {
       throw new BadRequestException(`Invalid Stripe webhook signature: ${errorMsg}`);
     }
 
-    // 1. Idempotency Check in MongoDB
-    const existingEvent = await this.processedEventModel.findById(event.id);
-    if (existingEvent) {
-      this.logger.log(
-        `Webhook event ${event.id} already processed. Returning HTTP 200 without mutations.`,
-      );
-      return { received: true };
-    }
-
-    // 2. Record Event ID in processed_events (Primary Key Idempotency Guard)
-    try {
-      await this.processedEventModel.create({
-        _id: event.id,
-        eventType: event.type,
-        processedAt: new Date(),
-      });
-    } catch (err: any) {
-      // Handle parallel race condition where two identical webhook deliveries arrive concurrently
-      if (err?.code === 11000) {
-        this.logger.log(
-          `Webhook event ${event.id} already recorded by concurrent delivery. Acknowledging with HTTP 200.`,
-        );
-        return { received: true };
-      }
-      throw err;
-    }
-
-    // 3. Process Domain Events
-    switch (event.type) {
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const payment = await this.paymentModel.findOne({
-          stripePaymentIntentId: paymentIntent.id,
-        });
-
-        if (payment) {
-          payment.status = 'SUCCEEDED';
-          await payment.save();
-
-          await this.requestModel.findByIdAndUpdate(payment.requestId, {
-            $set: { status: 'PAID' },
-          });
-
-          this.marketplaceGateway.emitPaymentSucceeded(
-            payment.customerId,
-            payment.providerId,
-            payment.requestId,
-            payment.amount,
-          );
-
-          this.logger.log(
-            `Payment ${payment.id} marked SUCCEEDED and request ${payment.requestId} marked PAID`,
-          );
-        } else {
-          this.logger.warn(
-            `Payment record not found for PaymentIntent ${paymentIntent.id}`,
-          );
-        }
-        break;
-      }
-
-      case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const payment = await this.paymentModel.findOne({
-          stripePaymentIntentId: paymentIntent.id,
-        });
-
-        if (payment) {
-          payment.status = 'FAILED';
-          await payment.save();
-          this.logger.log(
-            `Payment ${payment.id} marked FAILED for PaymentIntent ${paymentIntent.id}`,
-          );
-        }
-        break;
-      }
-
-      default:
-        this.logger.log(`Unhandled Stripe event type: ${event.type}`);
-    }
-
-    return { received: true };
+    const result = await this.paymentsWebhookService.processEvent(event);
+    return { received: result.received };
   }
 
   /**

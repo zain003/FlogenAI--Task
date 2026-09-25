@@ -11,6 +11,7 @@ import { ProcessedEvent } from './schemas/processed-event.schema';
 import { Offer } from '../offers/schemas/offer.schema';
 import { ServiceRequest } from '../requests/schemas/service-request.schema';
 import { StripeService } from './stripe.service';
+import { PaymentsWebhookService } from './payments-webhook.service';
 import { MarketplaceGateway } from '../socket/socket.gateway';
 
 describe('PaymentsService (Domain Logic Unit Tests)', () => {
@@ -84,6 +85,7 @@ describe('PaymentsService (Domain Logic Unit Tests)', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentsService,
+        PaymentsWebhookService,
         {
           provide: getModelToken(Payment.name),
           useValue: mockPaymentModel,

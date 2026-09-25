@@ -21,6 +21,8 @@ import {
   Clock,
   User,
   Shield,
+  ShieldCheck,
+  MessageSquare,
   FileText,
   Sparkles,
   Loader2,
@@ -326,6 +328,47 @@ export default function RequestDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Paid / Open Chat Banner (Trigger for FEAT-005 Real-time Chat) */}
+      {request.status === 'PAID' && (
+        <div
+          data-testid="paid-chat-unlocked-banner"
+          className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/60 via-[#111827] to-[#111827] p-5 shadow-lg"
+        >
+          <div className="flex items-center space-x-3.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-sm font-semibold text-white">
+                  Payment Secured &amp; Escrowed
+                </h3>
+                <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase text-emerald-300 border border-emerald-500/30">
+                  Chat Unlocked
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-gray-300">
+                Funds are held in secure escrow. Direct real-time messaging between Customer and Provider is now active.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            data-testid="open-chat-button"
+            onClick={() => {
+              // Prepares interaction with FEAT-005 chat module
+              const el = document.getElementById('chat-widget-root');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="inline-flex items-center space-x-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <MessageSquare className="h-4 w-4" />
+            <span>Open Chat</span>
+          </button>
+        </div>
+      )}
 
       {/* Real-Time Offer Arrival Banner */}
       {newlyArrivedOfferId && (
