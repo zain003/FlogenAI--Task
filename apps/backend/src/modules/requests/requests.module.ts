@@ -7,6 +7,7 @@ import {
 import { RequestsController } from './requests.controller';
 import { RequestsService } from './requests.service';
 import { AuthModule } from '../auth/auth.module';
+import { SocketModule } from '../socket/socket.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuthModule } from '../auth/auth.module';
       { name: ServiceRequest.name, schema: ServiceRequestSchema },
     ]),
     AuthModule,
+    SocketModule,
   ],
   controllers: [RequestsController],
   providers: [RequestsService],

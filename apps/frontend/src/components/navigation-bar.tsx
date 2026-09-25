@@ -3,10 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
+import { useSocket } from '@/context/socket-context';
 import { LogOut, User as UserIcon, Shield, Radio } from 'lucide-react';
 
 export function NavigationBar() {
   const { user, isAuthenticated, logout } = useAuth();
+  const { isConnected } = useSocket();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#1f293d] bg-[#111827]/90 backdrop-blur-md">
@@ -57,10 +59,19 @@ export function NavigationBar() {
         <div className="flex items-center space-x-4">
           {/* Socket.IO Connection Pill Indicator */}
           <div
-            className="flex items-center space-x-1.5 rounded-full border border-emerald-900/60 bg-emerald-950/40 px-2.5 py-1 text-xs font-medium text-emerald-400"
-            title="Real-Time Engine Online"
+            data-testid="live-sync-indicator"
+            className={`flex items-center space-x-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition ${
+              isConnected
+                ? 'border border-emerald-900/60 bg-emerald-950/40 text-emerald-400'
+                : 'border border-gray-700/60 bg-gray-800/40 text-gray-400'
+            }`}
+            title={isConnected ? 'Real-Time Engine Online' : 'Live Sync Connecting...'}
           >
-            <Radio className="h-3.5 w-3.5 animate-pulse text-emerald-400" />
+            <Radio
+              className={`h-3.5 w-3.5 ${
+                isConnected ? 'animate-pulse text-emerald-400' : 'text-gray-500'
+              }`}
+            />
             <span className="hidden sm:inline">Live Sync</span>
           </div>
 

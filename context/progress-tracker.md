@@ -8,14 +8,14 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-002-INT-requests-realtime.md` (Socket.IO `request:created` Real-time Broadcast).
+- Begin execution of `FEAT-002-VERIFY-requests.md` (Service Requests SQA Verification Pass).
 
 ## Feature Implementation Pipeline
 
 | Feature ID | Feature Name | Layer | Status | Test Report |
 | :--- | :--- | :--- | :--- | :--- |
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
-| **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Next), VERIFY | In Progress | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
+| **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Next) | In Progress | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
 | **FEAT-003** | Offers & Concurrency Protection | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-003-test-report.md` |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
@@ -42,14 +42,22 @@ Update this file after every meaningful implementation change and test report co
   - Built Request Detail page (`/requests/[id]`) rendering full title, scope/description, metadata, USD budget callout, 404 error boundary, and offer room placeholder for incoming bids (`FEAT-003-FE`).
   - Added role-based navigation links to `NavigationBar` for Customer and Provider journeys.
   - Authored 10 comprehensive Fake DOM tests in `requests.spec.tsx`, expanding frontend test suite to 29/29 passing tests (79 total across monorepo), 0 compiler errors, and verified clean Next.js 16 production build.
+- **`FEAT-002-INT-requests-realtime.md`**: Real-Time Request Broadcast via Redis Pub/Sub Adapter implemented.
+  - Implemented `RedisIoAdapter` extending `IoAdapter` using `@socket.io/redis-adapter` and `redis` with resilient fallback to local in-memory adapter on Redis unavailability.
+  - Implemented `MarketplaceGateway` with handshake JWT authentication, extracting Bearer token, attaching verified user identity (`id`, `email`, `role`), rejecting unauthenticated sockets, and auto-joining Provider sockets to `"providers"` broadcast room.
+  - Injected `MarketplaceGateway` into `RequestsService.create` to emit typed `request:created` event to room `"providers"` upon request creation.
+  - Implemented frontend `SocketProvider` and `useSocket` hook with automatic token hydration, reconnection management, and SSR safety.
+  - Updated Provider Browse feed to listen to `request:created`, deduplicate incoming requests by `request.id` for idempotency, prepend new jobs with visual animation, and auto-fetch on socket reconnect.
+  - Wired dynamic live sync pulse into `NavigationBar`.
+  - Added comprehensive automated test suites (gateway unit tests, cross-instance Redis pub/sub simulation tests, service emission tests, and frontend fake DOM live feed tests) bringing total passing test suite to 91/91 (59 backend + 32 frontend).
 
 ## In Progress
 
-- Pre-flight preparation for `FEAT-002-INT-requests-realtime.md`.
+- Pre-flight preparation for `FEAT-002-VERIFY-requests.md`.
 
 ## Next Up
 
-- `FEAT-002-INT-requests-realtime.md` (Socket.IO `request:created` Real-Time Broadcast & Redis Pub/Sub sync).
+- `FEAT-002-VERIFY-requests.md` (Requests SQA Verification Pass).
 
 ## Open Questions & Assumptions
 

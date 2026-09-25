@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { RequestCard } from '@/components/requests/request-card';
+import { useSocket } from '@/context/socket-context';
 import {
   apiClient,
   ApiClientError,
@@ -14,12 +15,16 @@ import {
   AlertCircle,
   Inbox,
   Filter,
+  Radio,
+  Sparkles,
 } from 'lucide-react';
 
 export default function ProviderBrowsePage() {
+  const { socket, isConnected } = useSocket();
   const [requests, setRequests] = useState<ServiceRequestEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [newlyArrivedId, setNewlyArrivedId] = useState<string | null>(null);
 
   const fetchOpenRequests = useCallback(async () => {
     setIsLoading(true);
@@ -43,6 +48,44 @@ export default function ProviderBrowsePage() {
     fetchOpenRequests();
   }, [fetchOpenRequests]);
 
+  // Real-time listener for request:created event via Socket.IO
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleRequestCreated = (payload: { request: ServiceRequestEntity }) => {
+      if (!payload?.request?.id) return;
+
+      const newReq = payload.request;
+
+      setRequests((prev) => {
+        // Idempotency: Deduplicate request in local state by request.id
+        if (prev.some((req) => req.id === newReq.id)) {
+          return prev;
+        }
+        return [newReq, ...prev];
+      });
+
+      // Visual highlight animation for incoming real-time request
+      setNewlyArrivedId(newReq.id);
+      setTimeout(() => {
+        setNewlyArrivedId((current) => (current === newReq.id ? null : current));
+      }, 4000);
+    };
+
+    socket.on('request:created', handleRequestCreated);
+
+    // Edge case: Fetch latest feed on reconnect to catch any missed requests
+    const handleReconnect = () => {
+      fetchOpenRequests();
+    };
+    socket.on('reconnect', handleReconnect);
+
+    return () => {
+      socket.off('request:created', handleRequestCreated);
+      socket.off('reconnect', handleReconnect);
+    };
+  }, [socket, fetchOpenRequests]);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
@@ -61,6 +104,18 @@ export default function ProviderBrowsePage() {
         </div>
 
         <div className="flex items-center space-x-3">
+          {/* Real-time sync pill */}
+          <div
+            className={`flex items-center space-x-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
+              isConnected
+                ? 'border border-emerald-900/60 bg-emerald-950/40 text-emerald-400'
+                : 'border border-gray-700/60 bg-gray-800/40 text-gray-400'
+            }`}
+          >
+            <Radio className={`h-3.5 w-3.5 ${isConnected ? 'animate-pulse text-emerald-400' : 'text-gray-500'}`} />
+            <span>{isConnected ? 'Real-Time Feed Live' : 'Connecting Stream...'}</span>
+          </div>
+
           <button
             type="button"
             onClick={fetchOpenRequests}
@@ -85,6 +140,16 @@ export default function ProviderBrowsePage() {
           <span className="text-gray-500">•</span>
           <span>{requests.length} available jobs</span>
         </div>
+
+        {newlyArrivedId && (
+          <div
+            data-testid="new-request-alert"
+            className="flex items-center space-x-1.5 text-xs font-medium text-emerald-400 animate-pulse"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>New request just arrived in real time!</span>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -121,11 +186,16 @@ export default function ProviderBrowsePage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {requests.map((request) => (
-            <RequestCard
+            <div
               key={request.id}
-              request={request}
-              viewMode="provider"
-            />
+              className={`transition-all duration-500 ${
+                request.id === newlyArrivedId
+                  ? 'ring-2 ring-emerald-500 rounded-lg shadow-lg shadow-emerald-500/20'
+                  : ''
+              }`}
+            >
+              <RequestCard request={request} viewMode="provider" />
+            </div>
           ))}
         </div>
       )}

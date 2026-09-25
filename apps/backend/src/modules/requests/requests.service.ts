@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import {
@@ -14,6 +14,7 @@ import {
   ServiceRequestEntity,
   PaginatedResponse,
 } from './interfaces/request.interface';
+import { MarketplaceGateway } from '../socket/socket.gateway';
 
 @Injectable()
 export class RequestsService {
@@ -22,6 +23,8 @@ export class RequestsService {
   constructor(
     @InjectModel(ServiceRequest.name)
     private readonly requestModel: Model<ServiceRequestDocument>,
+    @Optional()
+    private readonly marketplaceGateway?: MarketplaceGateway,
   ) {}
 
   /**
@@ -73,6 +76,10 @@ export class RequestsService {
     this.logger.log(
       `Created service request ${entity.id} for customer ${customerId} with budget $${entity.budget}`,
     );
+
+    if (this.marketplaceGateway) {
+      this.marketplaceGateway.emitRequestCreated(entity);
+    }
 
     return entity;
   }

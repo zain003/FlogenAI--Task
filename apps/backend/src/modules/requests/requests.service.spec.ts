@@ -77,6 +77,24 @@ describe('RequestsService (Domain Logic Unit Tests)', () => {
       expect(result.acceptedOfferId).toBeNull();
       expect(result.createdAt).toBe(mockDate.toISOString());
     });
+
+    it('should emit request:created via MarketplaceGateway when gateway is injected', async () => {
+      const mockGateway = {
+        emitRequestCreated: jest.fn(),
+      };
+
+      const customService = new RequestsService(mockRequestModel, mockGateway as any);
+      const customerId = '507f1f77bcf86cd799439011';
+      const dto = {
+        title: 'Electrical Rewiring',
+        description: 'Need full residential breaker panel rewiring.',
+        budget: 600,
+      };
+
+      const result = await customService.create(customerId, dto);
+
+      expect(mockGateway.emitRequestCreated).toHaveBeenCalledWith(result);
+    });
   });
 
   describe('findAll', () => {
