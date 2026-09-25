@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-004-BE-payments.md` (Stripe PaymentIntent & Idempotent Webhook).
+- Begin execution of `FEAT-004-FE-payments.md` (Stripe Elements Checkout UI).
 
 ## Feature Implementation Pipeline
 
@@ -17,7 +17,7 @@ Update this file after every meaningful implementation change and test report co
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
 | **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-003-test-report.md`](../feature-test-reports/FEAT-003-test-report.md) |
-| **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
+| **FEAT-004** | Stripe Payments & Webhook Idempotency | BE (Passed), FE, INT, VERIFY | In Progress | [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md) |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
 | **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
 | **EPIC-001** | Full Marketplace End-to-End Journey | VERIFY | Not Started | `feature-test-reports/EPIC-001-test-report.md` |
@@ -110,15 +110,24 @@ Update this file after every meaningful implementation change and test report co
   - Resolved 2 defects during SQA cycle: `BUG-INT-01` (missing `MarketplaceGateway` mock in concurrency spec) and `BUG-INT-02` (socket useEffect timing race in frontend integration test).
   - Confirmed multi-layer test suite pass rate of 100% with 155/155 tests passing (110 backend + 45 frontend) and zero failures.
   - Published formal SQA Test Report at [`feature-test-reports/FEAT-003-test-report.md`](../feature-test-reports/FEAT-003-test-report.md).
+- **`FEAT-004-BE-payments.md`**: Stripe PaymentIntents & Idempotent Webhook Engine backend module implemented with NestJS and Stripe SDK (`^17.7.0`).
+  - **Schema & Indexes**: Defined Mongoose `Payment` schema with unique index on `stripePaymentIntentId` and single-field indexes on `requestId`, `customerId`, `providerId`, and `createdAt`. Defined `ProcessedEvent` schema with string primary key `_id: event.id` for webhook idempotency.
+  - **Server-Enforced Pricing**: Created `PaymentsService.createPaymentIntent` calculating exact price in cents (`offer.price * 100`) from accepted offer in database; strictly ignoring and forbidding client-supplied monetary amounts. Enforces caller is request owner customer, offer status is `ACCEPTED`, and prevents double-payment if already succeeded.
+  - **Stripe Service**: Implemented `StripeService` reading `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` for PaymentIntent generation and HMAC-SHA256 raw body signature verification via `stripe.webhooks.constructEvent`.
+  - **Cryptographic Webhook Receiver & Idempotency Engine**: Implemented `POST /api/payments/webhook` with raw request body buffer preservation (`{ rawBody: true }` in NestFactory and `RawBodyRequest`). Automatically verifies signature, queries `processed_events` by `event.id`, and acknowledges duplicates immediately with HTTP `200 OK` without triggering state mutations. Transitions Payment to `SUCCEEDED` and ServiceRequest to `PAID` on `payment_intent.succeeded`. Transitions Payment to `FAILED` on `payment_intent.payment_failed`.
+  - **Socket.IO Event Emission**: Added `emitPaymentSucceeded` to `MarketplaceGateway` broadcasting `payment:succeeded` to both Customer and Provider private rooms (`user:<userId>`).
+  - **Multi-Layer SQA Test Suite**: Added 42 automated tests across `payments.service.spec.ts` (18 tests), `payments.controller.spec.ts` (14 tests), `stripe.service.spec.ts` (5 tests), `webhook.spec.ts` (4 idempotency replay tests), and `socket.gateway.spec.ts` (1 test).
+  - Monorepo test suite expanded to **197/197 passing tests (152 backend + 45 frontend)** with 100% pass rate, zero compiler or typecheck errors, and clean builds for both NestJS and Next.js 16.
+  - Formal SQA Test Report published at [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md).
 
 ## In Progress
 
-- `FEAT-004-BE-payments.md` (Stripe PaymentIntent & Idempotent Webhook).
+- `FEAT-004-FE-payments.md` (Stripe Elements Checkout UI).
 
 ## Next Up
 
-- `FEAT-004-BE-payments.md` (Stripe PaymentIntent & Idempotent Webhook).
 - `FEAT-004-FE-payments.md` (Stripe Elements Checkout UI).
+- `FEAT-004-INT-payments-webhook.md` (Webhook State Reconciler & Chat Unlock).
 
 ## Open Questions & Assumptions
 

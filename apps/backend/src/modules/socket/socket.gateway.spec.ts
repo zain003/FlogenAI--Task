@@ -256,5 +256,23 @@ describe('MarketplaceGateway (WebSocket Handshake & Broadcasts)', () => {
 
       expect(gateway.server.emit).toHaveBeenCalledTimes(2);
     });
+
+    // Test 5: payment:succeeded → customer and provider private rooms
+    it('should emit payment:succeeded to both customer and provider rooms', () => {
+      const customerId = 'customer-abc-111';
+      const providerId = 'provider-xyz-333';
+      const requestId = 'req-789';
+      const amount = 35000;
+
+      gateway.emitPaymentSucceeded(customerId, providerId, requestId, amount);
+
+      expect(gateway.server.to).toHaveBeenCalledWith(`user:${customerId}`);
+      expect(gateway.server.to).toHaveBeenCalledWith(`user:${providerId}`);
+      expect(gateway.server.emit).toHaveBeenCalledWith('payment:succeeded', {
+        requestId,
+        amount,
+      });
+      expect(gateway.server.emit).toHaveBeenCalledTimes(2);
+    });
   });
 });

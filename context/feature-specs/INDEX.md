@@ -19,7 +19,7 @@ This index tracks all feature specifications, dependencies, implementation statu
 | **FEAT-003-FE** | Frontend | P0 | Offer Submission & Accept UI | `FEAT-003-BE` | ~115 | ☑ Passed | - |
 | **FEAT-003-INT** | Integration| P0 | Real-Time Offer Events & Updates | `FEAT-003-BE` | ~110 | ☑ Passed | [`feature-test-reports/FEAT-003-test-report.md`](../../feature-test-reports/FEAT-003-test-report.md) |
 | **FEAT-003-VERIFY** | Verify | P0 | Offers & Race Condition Verification | `FEAT-003-BE`, `FEAT-003-FE`, `FEAT-003-INT` | ~85 | ☑ Passed | [`feature-test-reports/FEAT-003-test-report.md`](../../feature-test-reports/FEAT-003-test-report.md) |
-| **FEAT-004-BE** | Backend | P0 | Stripe PaymentIntent & Idempotent Webhook | `FEAT-003-VERIFY` | ~140 | ☐ Not Started | - |
+| **FEAT-004-BE** | Backend | P0 | Stripe PaymentIntent & Idempotent Webhook | `FEAT-003-VERIFY` | ~140 | ☑ Passed | [`feature-test-reports/FEAT-004-test-report.md`](../../feature-test-reports/FEAT-004-test-report.md) |
 | **FEAT-004-FE** | Frontend | P0 | Stripe Elements Checkout UI | `FEAT-004-BE` | ~110 | ☐ Not Started | - |
 | **FEAT-004-INT** | Integration| P0 | Webhook State Reconciler | `FEAT-004-BE` | ~110 | ☐ Not Started | - |
 | **FEAT-004-VERIFY** | Verify | P0 | Payments & Webhook Idempotency Verification | `FEAT-004-BE`, `FEAT-004-FE`, `FEAT-004-INT` | ~80 | ☐ Not Started | `feature-test-reports/FEAT-004-test-report.md` |

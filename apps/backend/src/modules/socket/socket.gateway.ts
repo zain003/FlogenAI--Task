@@ -28,6 +28,11 @@ export interface RequestClosedPayload {
   requestId: string;
 }
 
+export interface PaymentSucceededPayload {
+  requestId: string;
+  amount: number;
+}
+
 // ─── Authenticated Socket User ───────────────────────────────────────────────
 
 export interface AuthenticatedSocketUser {
@@ -182,6 +187,33 @@ export class MarketplaceGateway
       this.server.to('providers').emit('request:closed', closedPayload);
       this.logger.log(
         `Dispatched request:closed for request ${requestId} → room 'providers'`,
+      );
+    }
+  }
+
+  /**
+   * Dispatches `payment:succeeded` to both customer and provider private rooms.
+   * Called by PaymentsService when Stripe webhook confirms payment completion.
+   *
+   * @param customerId - Customer user ID.
+   * @param providerId - Provider user ID.
+   * @param requestId  - The service request ID.
+   * @param amount     - The payment amount in cents.
+   */
+  emitPaymentSucceeded(
+    customerId: string,
+    providerId: string,
+    requestId: string,
+    amount: number,
+  ): void {
+    if (this.server) {
+      const payload: PaymentSucceededPayload = { requestId, amount };
+      const customerRoom = `user:${customerId}`;
+      const providerRoom = `user:${providerId}`;
+      this.server.to(customerRoom).emit('payment:succeeded', payload);
+      this.server.to(providerRoom).emit('payment:succeeded', payload);
+      this.logger.log(
+        `Dispatched payment:succeeded for request ${requestId} ($${(amount / 100).toFixed(2)}) → rooms '${customerRoom}', '${providerRoom}'`,
       );
     }
   }

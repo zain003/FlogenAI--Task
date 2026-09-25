@@ -8,6 +8,7 @@ import { RequestsModule } from './modules/requests/requests.module';
 import { OffersModule } from './modules/offers/offers.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { SocketModule } from './modules/socket/socket.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 @Module({
@@ -37,6 +38,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     AuthModule,
     RequestsModule,
     OffersModule,
+    PaymentsModule,
     SocketModule,
   ],
   providers: [
