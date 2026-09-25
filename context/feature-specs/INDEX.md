@@ -26,7 +26,7 @@ This index tracks all feature specifications, dependencies, implementation statu
 | **FEAT-005-BE** | Backend | P0 | Chat Conversations & Messages | `FEAT-003-VERIFY` | ~120 | ☑ Passed | [`feature-test-reports/FEAT-005-test-report.md`](../../feature-test-reports/FEAT-005-test-report.md) |
 | **FEAT-005-FE** | Frontend | P0 | Real-Time Chat Widget | `FEAT-005-BE` | ~115 | ☑ Passed | - |
 | **FEAT-005-INT** | Integration| P0 | Socket.IO Room Auth & Messaging Gateway | `FEAT-005-BE` | ~125 | ☑ Passed | [`feature-test-reports/FEAT-005-test-report.md`](../../feature-test-reports/FEAT-005-test-report.md) |
-| **FEAT-005-VERIFY** | Verify | P0 | Chat & Room Authorization Verification | `FEAT-005-BE`, `FEAT-005-FE`, `FEAT-005-INT` | ~80 | ☐ Not Started | `feature-test-reports/FEAT-005-test-report.md` |
+| **FEAT-005-VERIFY** | Verify | P0 | Chat & Room Authorization Verification | `FEAT-005-BE`, `FEAT-005-FE`, `FEAT-005-INT` | ~80 | ☑ Passed | [`feature-test-reports/FEAT-005-test-report.md`](../../feature-test-reports/FEAT-005-test-report.md) |
 | **FEAT-006-INT** | Integration| P0 | Multi-Instance Scaling & Docker Setup | `FEAT-001`–`FEAT-005` | ~130 | ☐ Not Started | - |
 | **FEAT-006-VERIFY** | Verify | P0 | Cross-Instance WebSocket & Load Balancing | `FEAT-006-INT` | ~80 | ☐ Not Started | `feature-test-reports/FEAT-006-test-report.md` |
 | **EPIC-001-VERIFY**| Epic Verify| P0 | Full Marketplace End-to-End Journey | `FEAT-001`–`FEAT-006` | ~100 | ☐ Not Started | `feature-test-reports/EPIC-001-test-report.md` |
