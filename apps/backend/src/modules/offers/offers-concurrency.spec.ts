@@ -6,6 +6,7 @@ import { Offer } from './schemas/offer.schema';
 import { ServiceRequest } from '../requests/schemas/service-request.schema';
 import { DistributedLockService } from '../redis/distributed-lock.service';
 import { RedisService } from '../redis/redis.service';
+import { MarketplaceGateway } from '../socket/socket.gateway';
 
 describe('Offers Concurrency & Distributed Lock Race Condition Tests', () => {
   let service: OffersService;
@@ -166,6 +167,14 @@ describe('Offers Concurrency & Distributed Lock Race Condition Tests', () => {
         {
           provide: getModelToken(ServiceRequest.name),
           useValue: mockRequestModel,
+        },
+        {
+          // No-op mock: concurrency tests verify DB-level race safety, not event dispatch
+          provide: MarketplaceGateway,
+          useValue: {
+            emitOfferCreated: jest.fn(),
+            emitOfferAccepted: jest.fn(),
+          },
         },
       ],
     }).compile();

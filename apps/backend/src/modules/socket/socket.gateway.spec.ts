@@ -3,11 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MarketplaceGateway } from './socket.gateway';
 import { ServiceRequestEntity } from '../requests/interfaces/request.interface';
+import { OfferEntity } from '../offers/interfaces/offer.interface';
 
 describe('MarketplaceGateway (WebSocket Handshake & Broadcasts)', () => {
   let gateway: MarketplaceGateway;
-  let jwtService: JwtService;
-  let configService: ConfigService;
 
   const mockJwtService = {
     verify: jest.fn(),
@@ -16,6 +15,20 @@ describe('MarketplaceGateway (WebSocket Handshake & Broadcasts)', () => {
   const mockConfigService = {
     get: jest.fn().mockReturnValue('test-secret-key-12345'),
   };
+
+  const createMockSocket = (overrides?: any) => ({
+    id: 'socket-test-123',
+    handshake: {
+      auth: {},
+      headers: {},
+      ...overrides?.handshake,
+    },
+    data: {},
+    join: jest.fn(),
+    emit: jest.fn(),
+    disconnect: jest.fn(),
+    ...overrides,
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,35 +40,23 @@ describe('MarketplaceGateway (WebSocket Handshake & Broadcasts)', () => {
     }).compile();
 
     gateway = module.get<MarketplaceGateway>(MarketplaceGateway);
-    jwtService = module.get<JwtService>(JwtService);
-    configService = module.get<ConfigService>(ConfigService);
 
-    // Initialize mock Socket.IO server
+    // Initialize mock Socket.IO server with chained .to().emit()
     gateway.server = {
       to: jest.fn().mockReturnThis(),
       emit: jest.fn(),
     } as any;
 
     jest.clearAllMocks();
+    // Re-apply server mock after clearAllMocks
+    gateway.server = {
+      to: jest.fn().mockReturnThis(),
+      emit: jest.fn(),
+    } as any;
   });
 
-  const createMockSocket = (overrides?: any) => {
-    return {
-      id: 'socket-test-123',
-      handshake: {
-        auth: {},
-        headers: {},
-        ...overrides?.handshake,
-      },
-      data: {},
-      join: jest.fn(),
-      emit: jest.fn(),
-      disconnect: jest.fn(),
-      ...overrides,
-    } as any;
-  };
+  // ─── Connection Authentication ──────────────────────────────────────────
 
-  // Test 1: should reject socket connection when handshake token is invalid or missing
   describe('Connection Authentication', () => {
     it('should reject socket connection when handshake token is missing', async () => {
       const client = createMockSocket({
@@ -89,8 +90,7 @@ describe('MarketplaceGateway (WebSocket Handshake & Broadcasts)', () => {
       expect(client.join).not.toHaveBeenCalled();
     });
 
-    // Test 2: should authenticate provider socket and auto-join providers room
-    it('should authenticate provider socket and auto-join providers room', async () => {
+    it('should authenticate provider and join both user private room and providers broadcast room', async () => {
       const client = createMockSocket({
         handshake: { auth: { token: 'valid-provider-jwt' } },
       });
@@ -108,11 +108,14 @@ describe('MarketplaceGateway (WebSocket Handshake & Broadcasts)', () => {
         email: 'provider@example.com',
         role: 'provider',
       });
+      // Private room
+      expect(client.join).toHaveBeenCalledWith('user:provider-user-456');
+      // Broadcast room
       expect(client.join).toHaveBeenCalledWith('providers');
       expect(client.disconnect).not.toHaveBeenCalled();
     });
 
-    it('should authenticate customer socket but NOT join providers room', async () => {
+    it('should authenticate customer and join user private room but NOT providers room', async () => {
       const client = createMockSocket({
         handshake: {
           headers: { authorization: 'Bearer valid-customer-jwt' },
@@ -132,13 +135,18 @@ describe('MarketplaceGateway (WebSocket Handshake & Broadcasts)', () => {
         email: 'customer@example.com',
         role: 'customer',
       });
+      // Must join private room
+      expect(client.join).toHaveBeenCalledWith('user:customer-user-123');
+      // Must NOT join broadcast room
       expect(client.join).not.toHaveBeenCalledWith('providers');
       expect(client.disconnect).not.toHaveBeenCalled();
     });
   });
 
-  // Test 3: should broadcast request:created event to providers room when request is created
+  // ─── Event Broadcasts ───────────────────────────────────────────────────
+
   describe('Event Broadcasts', () => {
+    // Test 1: request:created → providers room
     it('should broadcast request:created event to providers room when request is created', () => {
       const mockRequest: ServiceRequestEntity = {
         id: 'req-realtime-789',
@@ -157,6 +165,96 @@ describe('MarketplaceGateway (WebSocket Handshake & Broadcasts)', () => {
       expect(gateway.server.emit).toHaveBeenCalledWith('request:created', {
         request: mockRequest,
       });
+    });
+
+    // Test 2: offer:created → customer private room
+    it('should emit offer:created to customer personal room when offer is posted', () => {
+      const customerId = 'customer-abc-111';
+      const mockOffer: OfferEntity = {
+        id: 'offer-new-222',
+        requestId: 'req-789',
+        providerId: 'provider-xyz-333',
+        price: 350,
+        message: 'I can complete this within 2 days with full materials included.',
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      gateway.emitOfferCreated(customerId, mockOffer, 'Emergency Generator Setup');
+
+      expect(gateway.server.to).toHaveBeenCalledWith(`user:${customerId}`);
+      expect(gateway.server.emit).toHaveBeenCalledWith('offer:created', {
+        offer: mockOffer,
+        requestTitle: 'Emergency Generator Setup',
+      });
+    });
+
+    // Test 3a: offer:accepted → winning provider private room
+    it('should emit offer:accepted to selected provider room when offer is accepted', () => {
+      const providerId = 'provider-xyz-333';
+      const requestId = 'req-789';
+      const mockOffer: OfferEntity = {
+        id: 'offer-accepted-444',
+        requestId,
+        providerId,
+        price: 350,
+        message: 'Ready to start immediately.',
+        status: 'ACCEPTED',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      gateway.emitOfferAccepted(providerId, mockOffer, requestId);
+
+      expect(gateway.server.to).toHaveBeenCalledWith(`user:${providerId}`);
+      expect(gateway.server.emit).toHaveBeenCalledWith('offer:accepted', {
+        offer: mockOffer,
+        requestId,
+      });
+    });
+
+    // Test 3b: request:closed → providers room
+    it('should broadcast request:closed to providers room when offer is accepted', () => {
+      const providerId = 'provider-xyz-333';
+      const requestId = 'req-789';
+      const mockOffer: OfferEntity = {
+        id: 'offer-accepted-444',
+        requestId,
+        providerId,
+        price: 350,
+        message: 'Ready to start immediately.',
+        status: 'ACCEPTED',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      gateway.emitOfferAccepted(providerId, mockOffer, requestId);
+
+      expect(gateway.server.to).toHaveBeenCalledWith('providers');
+      expect(gateway.server.emit).toHaveBeenCalledWith('request:closed', {
+        requestId,
+      });
+    });
+
+    // Test 4: emitOfferAccepted emits two distinct events in total
+    it('should emit exactly two events (offer:accepted + request:closed) on offer acceptance', () => {
+      const providerId = 'provider-xyz-333';
+      const requestId = 'req-789';
+      const mockOffer: OfferEntity = {
+        id: 'offer-accepted-444',
+        requestId,
+        providerId,
+        price: 350,
+        message: 'Ready to start immediately.',
+        status: 'ACCEPTED',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      gateway.emitOfferAccepted(providerId, mockOffer, requestId);
+
+      expect(gateway.server.emit).toHaveBeenCalledTimes(2);
     });
   });
 });

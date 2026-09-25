@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-003-INT-offers-realtime.md` (Real-Time Offer Events & Acceptance Broadcast).
+- Begin execution of `FEAT-003-VERIFY-offers.md` (Offers & Concurrency SQA Verification Pass).
 
 ## Feature Implementation Pipeline
 
@@ -16,7 +16,7 @@ Update this file after every meaningful implementation change and test report co
 | :--- | :--- | :--- | :--- | :--- |
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
-| **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Next), VERIFY | In Progress | `feature-test-reports/FEAT-003-test-report.md` |
+| **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Passed), VERIFY (Next) | In Progress | `feature-test-reports/FEAT-003-test-report.md` |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
 | **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
@@ -87,14 +87,27 @@ Update this file after every meaningful implementation change and test report co
   - **AuthContext Safety**: Exported `AuthContext` and added resilient fallback in `useAuth` hook ensuring zero runtime exceptions when components are rendered in isolated test harnesses.
   - **Fake DOM Test Suite**: Authored 9 comprehensive tests in `src/tests/offers.spec.tsx` covering provider submission, price and message validation, offer list rendering, customer acceptance mutations, peer rejection, provider button omission, and 409 conflict handling.
   - Monorepo test suite expanded to 144/144 passing tests (103 backend + 41 frontend) with 100% pass rate, 0 compiler errors, and clean Next.js 16 Turbopack production build.
+- **`FEAT-003-INT-offers-realtime.md`**: Real-Time Offer Events & Acceptance Broadcast implemented.
+  - **Gateway Private Room Auto-Join**: Updated `MarketplaceGateway.handleConnection` to join every authenticated socket to `user:<userId>` private room. Providers continue to also join the shared `"providers"` broadcast room.
+  - **Typed Event Dispatchers**: Added `emitOfferCreated(customerId, offer, requestTitle)` → dispatches `offer:created` to `user:<customerId>` room. Added `emitOfferAccepted(providerId, offer, requestId)` → dispatches `offer:accepted` to `user:<providerId>` AND `request:closed` to `"providers"` room. Both use typed payload interfaces (`OfferCreatedPayload`, `OfferAcceptedPayload`, `RequestClosedPayload`).
+  - **OffersService Integration**: Injected `MarketplaceGateway` into `OffersService`. After `createOffer` persists, `emitOfferCreated` is called with the customer ID from the parent request. After `acceptOffer` completes, `emitOfferAccepted` is called with the winning provider ID. Failure contract: socket delivery does NOT roll back DB transactions (at-least-once, reconcilable on page reload).
+  - **OffersModule Update**: Imported `SocketModule` into `OffersModule` so `MarketplaceGateway` is available for injection into `OffersService`.
+  - **Frontend Request Detail Page** (`/requests/[id]`): Added `offer:created` listener to receive live offers pushed to customer's private room; deduplicates by offer ID, prepends to OfferList, triggers `live-offer-arrival-banner` and `offer-live-indicator` highlight animation. Added `offer:accepted` listener to update request status badge in real time.
+  - **OfferList Component**: Added `liveOffers` and `highlightOfferId` props. Merges socket-injected offers into local state with deduplication. Renders ring highlight animation on newly arrived offer card. Shows live indicator in header.
+  - **Provider Browse Page** (`/provider/browse`): Added `request:closed` listener that updates matching request status to `ACCEPTED` without removing it from the feed. Reconnect handler isolated to its own `useEffect`.
+  - **Multi-Layer Test Suite** (11 new tests):
+    - 4 gateway unit tests in `socket.gateway.spec.ts` (user private room join, emitOfferCreated to customer room, emitOfferAccepted to provider room, request:closed to providers room, two-event count assertion).
+    - 3 cross-instance Redis pub/sub propagation tests in `socket-redis.spec.ts` (offer:created cross-node, offer:accepted + request:closed parallel cross-node).
+    - 2 service unit tests in `offers.service.spec.ts` (gateway emitOfferCreated called after createOffer, gateway emitOfferAccepted called after acceptOffer).
+    - 4 frontend integration tests in `offers-realtime.spec.tsx` (offer:created banner + indicator, offer:accepted status badge, request:closed provider feed, idempotency no-op).
+  - Monorepo test suite expanded to **155/155 passing tests (110 backend + 45 frontend)** with 100% pass rate and zero compiler or linter errors.
 
 ## In Progress
 
-- `FEAT-003-INT-offers-realtime.md` (Real-Time Offer Events & Acceptance Broadcast).
+- `FEAT-003-VERIFY-offers.md` (Offers & Concurrency SQA Verification Pass).
 
 ## Next Up
 
-- `FEAT-003-INT-offers-realtime.md` (Real-Time Offer Events & Acceptance Broadcast).
 - `FEAT-003-VERIFY-offers.md` (Offers SQA Verification Pass).
 - `FEAT-004-BE-payments.md` (Stripe PaymentIntent & Idempotent Webhook).
 

@@ -10,6 +10,7 @@ import { OffersService } from './offers.service';
 import { AuthModule } from '../auth/auth.module';
 import { RequestsModule } from '../requests/requests.module';
 import { RedisModule } from '../redis/redis.module';
+import { SocketModule } from '../socket/socket.module';
 
 @Module({
   imports: [
@@ -20,6 +21,8 @@ import { RedisModule } from '../redis/redis.module';
     AuthModule,
     RequestsModule,
     RedisModule,
+    // SocketModule provides MarketplaceGateway for real-time offer event dispatch
+    SocketModule,
   ],
   controllers: [OffersController],
   providers: [OffersService],

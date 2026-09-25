@@ -7,37 +7,52 @@ import {
   apiClient,
   ApiClientError,
   ServiceRequestEntity,
+  OfferEntity,
   formatCurrency,
   formatRelativeDate,
 } from '@/lib/api-client';
 import { RequestStatusBadge } from '@/components/requests/request-card';
 import { OfferList } from '@/components/offers/offer-list';
 import { useAuth } from '@/context/auth-context';
+import { useSocket } from '@/context/socket-context';
 import {
   ArrowLeft,
-  DollarSign,
   Clock,
   User,
   Shield,
-  Layers,
-  MessageSquare,
+  FileText,
   Sparkles,
   Loader2,
   AlertCircle,
-  FileText,
 } from 'lucide-react';
 
 export default function RequestDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { socket } = useSocket();
   const id = params?.id as string;
 
   const [request, setRequest] = useState<ServiceRequestEntity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleOfferAccepted = (acceptedOffer: any) => {
+  /**
+   * ID of the most recently live-injected offer, cleared after animation window.
+   * Used to apply a glow/highlight ring on the newly arrived offer card.
+   */
+  const [newlyArrivedOfferId, setNewlyArrivedOfferId] = useState<string | null>(null);
+
+  /**
+   * Live-injected offer queue. When the socket pushes `offer:created`, we
+   * prepend it here. OfferList reads this as the initial seed via `liveOffers`
+   * prop and deduplicates against its local state.
+   */
+  const [liveOffers, setLiveOffers] = useState<OfferEntity[]>([]);
+
+  // ─── Acceptance handler syncs parent request status ──────────────────────
+
+  const handleOfferAccepted = (acceptedOffer: OfferEntity): void => {
     setRequest((prev) =>
       prev
         ? {
@@ -49,7 +64,9 @@ export default function RequestDetailPage() {
     );
   };
 
-  const fetchRequestDetails = useCallback(async () => {
+  // ─── Initial data fetch ───────────────────────────────────────────────────
+
+  const fetchRequestDetails = useCallback(async (): Promise<void> => {
     if (!id) return;
     setIsLoading(true);
     setError(null);
@@ -71,6 +88,86 @@ export default function RequestDetailPage() {
   useEffect(() => {
     fetchRequestDetails();
   }, [fetchRequestDetails]);
+
+  // ─── Real-time offer:created listener ────────────────────────────────────
+  //
+  // The backend joins every authenticated user to 'user:<userId>'.
+  // When a provider submits an offer, the backend emits 'offer:created' to
+  // the customer's private room. We listen here and prepend the new offer to
+  // the list with a brief highlight animation.
+
+  useEffect(() => {
+    if (!socket || !id) return;
+
+    const handleOfferCreated = (payload: {
+      offer: OfferEntity;
+      requestTitle: string;
+    }): void => {
+      if (!payload?.offer?.id) return;
+
+      // Only inject if this event is for the currently viewed request
+      if (payload.offer.requestId !== id) return;
+
+      const incomingOffer = payload.offer;
+
+      setLiveOffers((prev) => {
+        // Idempotency: ignore duplicate socket deliveries for the same offer ID
+        if (prev.some((o) => o.id === incomingOffer.id)) {
+          return prev;
+        }
+        return [incomingOffer, ...prev];
+      });
+
+      // Trigger highlight animation for the newly arrived offer card
+      setNewlyArrivedOfferId(incomingOffer.id);
+      setTimeout(() => {
+        setNewlyArrivedOfferId((current) =>
+          current === incomingOffer.id ? null : current,
+        );
+      }, 4000);
+    };
+
+    socket.on('offer:created', handleOfferCreated);
+
+    return () => {
+      socket.off('offer:created', handleOfferCreated);
+    };
+  }, [socket, id]);
+
+  // ─── Real-time offer:accepted listener ───────────────────────────────────
+  //
+  // If this page is also viewed by the winning provider (after acceptance),
+  // update request status immediately on receiving 'offer:accepted'.
+
+  useEffect(() => {
+    if (!socket || !id) return;
+
+    const handleOfferAccepted = (payload: {
+      offer: OfferEntity;
+      requestId: string;
+    }): void => {
+      if (!payload?.offer?.id) return;
+      if (payload.requestId !== id) return;
+
+      setRequest((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: 'ACCEPTED',
+              acceptedOfferId: payload.offer.id,
+            }
+          : null,
+      );
+    };
+
+    socket.on('offer:accepted', handleOfferAccepted);
+
+    return () => {
+      socket.off('offer:accepted', handleOfferAccepted);
+    };
+  }, [socket, id]);
+
+  // ─── Loading state ────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -175,7 +272,7 @@ export default function RequestDetailPage() {
         <div className="mt-6">
           <h2 className="flex items-center space-x-2 text-sm font-semibold text-gray-200">
             <FileText className="h-4 w-4 text-indigo-400" />
-            <span>Project Scope & Requirements</span>
+            <span>Project Scope &amp; Requirements</span>
           </h2>
           <div
             data-testid="request-detail-description"
@@ -186,6 +283,17 @@ export default function RequestDetailPage() {
         </div>
       </div>
 
+      {/* Real-Time Offer Arrival Banner */}
+      {newlyArrivedOfferId && (
+        <div
+          data-testid="live-offer-arrival-banner"
+          className="mt-4 flex items-center space-x-2 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-4 py-3 text-xs font-medium text-indigo-300 animate-pulse"
+        >
+          <Sparkles className="h-4 w-4 text-indigo-400" />
+          <span>A new offer just arrived in real time!</span>
+        </div>
+      )}
+
       {/* Offers Stream & Management */}
       <OfferList
         requestId={request.id}
@@ -194,6 +302,8 @@ export default function RequestDetailPage() {
         requestStatus={request.status}
         isCustomerOwner={Boolean(user && user.id === request.customerId)}
         onOfferAccepted={handleOfferAccepted}
+        liveOffers={liveOffers}
+        highlightOfferId={newlyArrivedOfferId}
       />
     </div>
   );

@@ -26,7 +26,9 @@ export default function ProviderBrowsePage() {
   const [error, setError] = useState<string | null>(null);
   const [newlyArrivedId, setNewlyArrivedId] = useState<string | null>(null);
 
-  const fetchOpenRequests = useCallback(async () => {
+  // ─── Initial fetch ────────────────────────────────────────────────────────
+
+  const fetchOpenRequests = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
@@ -48,24 +50,30 @@ export default function ProviderBrowsePage() {
     fetchOpenRequests();
   }, [fetchOpenRequests]);
 
-  // Real-time listener for request:created event via Socket.IO
+  // ─── Real-time listener: request:created ─────────────────────────────────
+  //
+  // Providers are in the 'providers' room. New customer requests are broadcast
+  // here so they appear at the top of the feed without a page refresh.
+
   useEffect(() => {
     if (!socket) return;
 
-    const handleRequestCreated = (payload: { request: ServiceRequestEntity }) => {
+    const handleRequestCreated = (payload: {
+      request: ServiceRequestEntity;
+    }): void => {
       if (!payload?.request?.id) return;
 
       const newReq = payload.request;
 
       setRequests((prev) => {
-        // Idempotency: Deduplicate request in local state by request.id
+        // Idempotency: deduplicate incoming requests by ID
         if (prev.some((req) => req.id === newReq.id)) {
           return prev;
         }
         return [newReq, ...prev];
       });
 
-      // Visual highlight animation for incoming real-time request
+      // Visual highlight animation for newly arrived request
       setNewlyArrivedId(newReq.id);
       setTimeout(() => {
         setNewlyArrivedId((current) => (current === newReq.id ? null : current));
@@ -74,17 +82,59 @@ export default function ProviderBrowsePage() {
 
     socket.on('request:created', handleRequestCreated);
 
-    // Edge case: Fetch latest feed on reconnect to catch any missed requests
-    const handleReconnect = () => {
+    return () => {
+      socket.off('request:created', handleRequestCreated);
+    };
+  }, [socket]);
+
+  // ─── Real-time listener: request:closed ──────────────────────────────────
+  //
+  // When a customer accepts an offer, the backend emits `request:closed` to the
+  // 'providers' room. We update the matching request's status to 'ACCEPTED' in
+  // local state so providers can see it is no longer available — without removing
+  // it from the list (they may still want to view the details).
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleRequestClosed = (payload: { requestId: string }): void => {
+      if (!payload?.requestId) return;
+
+      setRequests((prev) =>
+        prev.map((req) =>
+          req.id === payload.requestId
+            ? { ...req, status: 'ACCEPTED' }
+            : req,
+        ),
+      );
+    };
+
+    socket.on('request:closed', handleRequestClosed);
+
+    return () => {
+      socket.off('request:closed', handleRequestClosed);
+    };
+  }, [socket]);
+
+  // ─── Reconnect handler ────────────────────────────────────────────────────
+  //
+  // Re-fetch the full feed on socket reconnect to reconcile any missed events.
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleReconnect = (): void => {
       fetchOpenRequests();
     };
+
     socket.on('reconnect', handleReconnect);
 
     return () => {
-      socket.off('request:created', handleRequestCreated);
       socket.off('reconnect', handleReconnect);
     };
   }, [socket, fetchOpenRequests]);
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -188,6 +238,7 @@ export default function ProviderBrowsePage() {
           {requests.map((request) => (
             <div
               key={request.id}
+              data-testid={`request-card-${request.id}`}
               className={`transition-all duration-500 ${
                 request.id === newlyArrivedId
                   ? 'ring-2 ring-emerald-500 rounded-lg shadow-lg shadow-emerald-500/20'

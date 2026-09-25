@@ -33,6 +33,8 @@ describe('RedisIoAdapter & Cross-Instance Propagation', () => {
     (redisAdapter.createAdapter as jest.Mock).mockReturnValue(adapterConstructorMock);
   });
 
+  // ─── Adapter Lifecycle Tests ───────────────────────────────────────────────
+
   it('should connect pub/sub clients and configure Redis adapter when Redis is available', async () => {
     const mockApp = {} as any;
     const adapter = new RedisIoAdapter(mockApp);
@@ -45,12 +47,10 @@ describe('RedisIoAdapter & Cross-Instance Propagation', () => {
     expect(mockSubClient.connect).toHaveBeenCalled();
     expect(redisAdapter.createAdapter).toHaveBeenCalledWith(mockPubClient, mockSubClient);
 
-    // Verify createIOServer binds adapter
-    const mockServer = {
-      adapter: jest.fn(),
-    };
-    // Mock super.createIOServer
-    jest.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(adapter)), 'createIOServer').mockReturnValue(mockServer);
+    const mockServer = { adapter: jest.fn() };
+    jest
+      .spyOn(Object.getPrototypeOf(Object.getPrototypeOf(adapter)), 'createIOServer')
+      .mockReturnValue(mockServer);
 
     const createdServer = adapter.createIOServer(3001);
     expect(mockServer.adapter).toHaveBeenCalledWith(adapterConstructorMock);
@@ -63,32 +63,29 @@ describe('RedisIoAdapter & Cross-Instance Propagation', () => {
     const mockApp = {} as any;
     const adapter = new RedisIoAdapter(mockApp);
 
-    // connectToRedis should catch the error and not crash
     await expect(adapter.connectToRedis()).resolves.not.toThrow();
 
-    const mockServer = {
-      adapter: jest.fn(),
-    };
-    jest.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(adapter)), 'createIOServer').mockReturnValue(mockServer);
+    const mockServer = { adapter: jest.fn() };
+    jest
+      .spyOn(Object.getPrototypeOf(Object.getPrototypeOf(adapter)), 'createIOServer')
+      .mockReturnValue(mockServer);
 
     adapter.createIOServer(3001);
-    // Should NOT have bound the redis adapter constructor since connection failed
     expect(mockServer.adapter).not.toHaveBeenCalled();
   });
 
-  // Test 4: should propagate request:created across two backend instances via Redis pub/sub
+  // ─── Cross-Instance Event Propagation Tests ────────────────────────────────
+
+  // Test: should propagate request:created across two backend instances via Redis pub/sub
   it('should propagate request:created across two backend instances via Redis pub/sub simulation', (done) => {
-    // Shared Redis broker simulation channel
     const redisBroker = new EventEmitter();
 
-    // Instance 1 simulator (Customer creates request on Node 1)
     const node1PubSub = {
       publish: (channel: string, message: string) => {
         redisBroker.emit(channel, message);
       },
     };
 
-    // Instance 2 simulator (Provider connected on Node 2)
     const node2ReceivedEvents: any[] = [];
     redisBroker.on('socket.io#providers#request:created', (data) => {
       const parsed = JSON.parse(data);
@@ -100,7 +97,6 @@ describe('RedisIoAdapter & Cross-Instance Propagation', () => {
       done();
     });
 
-    // Simulate Node 1 publishing through the Redis adapter channel
     const eventPayload = {
       request: {
         id: 'req-cross-node-101',
@@ -114,5 +110,105 @@ describe('RedisIoAdapter & Cross-Instance Propagation', () => {
     };
 
     node1PubSub.publish('socket.io#providers#request:created', JSON.stringify(eventPayload));
+  });
+
+  // FEAT-003-INT Test 4: should propagate offer:created across two NestJS instances via Redis adapter
+  it('should propagate offer:created across two NestJS instances via Redis pub/sub simulation', (done) => {
+    const redisBroker = new EventEmitter();
+    const customerId = 'customer-node-1';
+
+    const node1PubSub = {
+      publish: (channel: string, message: string) => {
+        redisBroker.emit(channel, message);
+      },
+    };
+
+    // Node 2: Customer is connected on Instance 2 and subscribed to private room
+    redisBroker.on(`socket.io#user:${customerId}#offer:created`, (data) => {
+      const parsed = JSON.parse(data);
+
+      expect(parsed.offer.id).toBe('offer-cross-node-202');
+      expect(parsed.offer.requestId).toBe('req-cross-node-101');
+      expect(parsed.offer.status).toBe('PENDING');
+      expect(parsed.requestTitle).toBe('Cross-Instance Plumbing Job');
+      done();
+    });
+
+    // Node 1: Provider creates offer on Instance 1; backend emits to customer's private room via Redis
+    const offerPayload = {
+      offer: {
+        id: 'offer-cross-node-202',
+        requestId: 'req-cross-node-101',
+        providerId: 'provider-node-2',
+        price: 320,
+        message: 'Available immediately with all required tools.',
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      requestTitle: 'Cross-Instance Plumbing Job',
+    };
+
+    node1PubSub.publish(
+      `socket.io#user:${customerId}#offer:created`,
+      JSON.stringify(offerPayload),
+    );
+  });
+
+  // FEAT-003-INT: should propagate offer:accepted to provider and request:closed to providers via Redis
+  it('should propagate offer:accepted and request:closed across NestJS instances via Redis pub/sub simulation', (done) => {
+    const redisBroker = new EventEmitter();
+    const providerId = 'provider-node-2';
+    let eventsReceived = 0;
+
+    const node2PubSub = {
+      publish: (channel: string, message: string) => {
+        redisBroker.emit(channel, message);
+      },
+    };
+
+    // Winning provider receives offer:accepted in their private room
+    redisBroker.on(`socket.io#user:${providerId}#offer:accepted`, (data) => {
+      const parsed = JSON.parse(data);
+      expect(parsed.offer.id).toBe('offer-accepted-303');
+      expect(parsed.offer.status).toBe('ACCEPTED');
+      expect(parsed.requestId).toBe('req-cross-node-101');
+      eventsReceived++;
+      if (eventsReceived === 2) done();
+    });
+
+    // All providers receive request:closed so they can update their feed
+    redisBroker.on('socket.io#providers#request:closed', (data) => {
+      const parsed = JSON.parse(data);
+      expect(parsed.requestId).toBe('req-cross-node-101');
+      eventsReceived++;
+      if (eventsReceived === 2) done();
+    });
+
+    // Instance 2 broadcasts acceptance events
+    const acceptedOfferPayload = {
+      offer: {
+        id: 'offer-accepted-303',
+        requestId: 'req-cross-node-101',
+        providerId,
+        price: 320,
+        message: 'Available immediately.',
+        status: 'ACCEPTED',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      requestId: 'req-cross-node-101',
+    };
+
+    const closedPayload = { requestId: 'req-cross-node-101' };
+
+    node2PubSub.publish(
+      `socket.io#user:${providerId}#offer:accepted`,
+      JSON.stringify(acceptedOfferPayload),
+    );
+    node2PubSub.publish(
+      'socket.io#providers#request:closed',
+      JSON.stringify(closedPayload),
+    );
   });
 });

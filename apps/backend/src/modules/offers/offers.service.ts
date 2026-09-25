@@ -14,6 +14,7 @@ import {
   ServiceRequestDocument,
 } from '../requests/schemas/service-request.schema';
 import { DistributedLockService } from '../redis/distributed-lock.service';
+import { MarketplaceGateway } from '../socket/socket.gateway';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { GetOffersQueryDto } from './dto/get-offers-query.dto';
 import {
@@ -32,6 +33,7 @@ export class OffersService {
     @InjectModel(ServiceRequest.name)
     private readonly requestModel: Model<ServiceRequestDocument>,
     private readonly distributedLockService: DistributedLockService,
+    private readonly marketplaceGateway: MarketplaceGateway,
   ) {}
 
   /**
@@ -62,6 +64,10 @@ export class OffersService {
 
   /**
    * Provider submits an offer against an OPEN service request.
+   * Emits `offer:created` to the customer's private room via Socket.IO / Redis adapter.
+   *
+   * Failure contract: socket delivery failure does NOT roll back the database
+   * transaction; state is reconcilable on next page load.
    */
   async createOffer(
     requestId: string,
@@ -103,6 +109,11 @@ export class OffersService {
     this.logger.log(
       `Offer ${entity.id} created by provider ${providerId} for request ${requestId} at $${entity.price}`,
     );
+
+    // Emit real-time offer:created event to the customer's private room.
+    // Failure to deliver does NOT roll back the persisted offer (at-least-once contract).
+    const customerId = request.customerId.toString();
+    this.marketplaceGateway.emitOfferCreated(customerId, entity, request.title);
 
     return entity;
   }
@@ -172,10 +183,16 @@ export class OffersService {
 
   /**
    * Customer accepts an offer with Two-Tier Concurrency Protection:
-   * Tier 1: Redis distributed lock (`mkt:lock:request:<requestId>`).
-   * Tier 2: Atomic MongoDB conditional update (`findOneAndUpdate({ _id: requestId, status: 'OPEN' })`).
-   * On success: winning offer marked ACCEPTED, peer offers marked REJECTED.
+   *   Tier 1: Redis distributed lock (`mkt:lock:request:<requestId>`).
+   *   Tier 2: Atomic MongoDB conditional update (`findOneAndUpdate({ _id: requestId, status: 'OPEN' })`).
+   *
+   * On success:
+   *   - Winning offer marked ACCEPTED; peer offers marked REJECTED.
+   *   - Emits `offer:accepted` to the winning provider's private room.
+   *   - Emits `request:closed` to the shared `providers` room.
+   *
    * Lock is safely released in finally block via atomic Lua script.
+   * Socket delivery failure does NOT roll back the database transaction.
    */
   async acceptOffer(
     offerId: string,
@@ -277,13 +294,20 @@ export class OffersService {
         `Offer ${offerId} accepted by customer ${customerId} for request ${requestId}. Peer offers rejected.`,
       );
 
+      const acceptedEntity = this.toEntity(acceptedOfferDoc || offer);
+      const providerId = offer.providerId.toString();
+
+      // Emit real-time events: offer:accepted to the winning provider, request:closed to providers room.
+      // Both dispatches happen via Redis Pub/Sub adapter — at-least-once across cluster.
+      this.marketplaceGateway.emitOfferAccepted(providerId, acceptedEntity, requestId.toString());
+
       return {
         success: true,
-        offer: this.toEntity(acceptedOfferDoc || offer),
+        offer: acceptedEntity,
         paymentPending: true,
       };
     } finally {
-      // Always release the distributed lock safely
+      // Always release the distributed lock safely via atomic Lua script
       await this.distributedLockService.release(lockKey, lockToken);
     }
   }

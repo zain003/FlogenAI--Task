@@ -10,10 +10,12 @@ import { OffersService } from './offers.service';
 import { Offer } from './schemas/offer.schema';
 import { ServiceRequest } from '../requests/schemas/service-request.schema';
 import { DistributedLockService } from '../redis/distributed-lock.service';
+import { MarketplaceGateway } from '../socket/socket.gateway';
 
 describe('OffersService (Domain Logic Unit Tests)', () => {
   let service: OffersService;
   let lockService: DistributedLockService;
+  let mockGateway: jest.Mocked<Pick<MarketplaceGateway, 'emitOfferCreated' | 'emitOfferAccepted'>>;
 
   const mockDate = new Date('2026-09-25T14:00:00.000Z');
   const validRequestId = '65f1a1a1a1a1a1a1a1a1a1a1';
@@ -59,6 +61,11 @@ describe('OffersService (Domain Logic Unit Tests)', () => {
       release: jest.fn().mockResolvedValue(true),
     };
 
+    mockGateway = {
+      emitOfferCreated: jest.fn(),
+      emitOfferAccepted: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OffersService,
@@ -73,6 +80,10 @@ describe('OffersService (Domain Logic Unit Tests)', () => {
         {
           provide: DistributedLockService,
           useValue: mockLockService,
+        },
+        {
+          provide: MarketplaceGateway,
+          useValue: mockGateway,
         },
       ],
     }).compile();
@@ -165,6 +176,31 @@ describe('OffersService (Domain Logic Unit Tests)', () => {
           message: 'Valid message',
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    // FEAT-003-INT: emitOfferCreated dispatched to customer room after offer creation
+    it('should call gateway.emitOfferCreated with customerId, offer, and requestTitle after offer is created', async () => {
+      const requestTitle = 'Emergency HVAC Maintenance';
+      mockRequestModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          _id: validRequestId,
+          status: 'OPEN',
+          customerId: customerId,
+          title: requestTitle,
+          toString: () => customerId,
+        }),
+      });
+
+      await service.createOffer(validRequestId, providerId, {
+        price: 275,
+        message: 'Ready to start on Monday with full gear.',
+      });
+
+      expect(mockGateway.emitOfferCreated).toHaveBeenCalledTimes(1);
+      const [calledCustomerId, calledOffer, calledTitle] = mockGateway.emitOfferCreated.mock.calls[0];
+      expect(calledCustomerId).toBe(customerId);
+      expect(calledOffer.status).toBe('PENDING');
+      expect(calledTitle).toBe(requestTitle);
     });
   });
 
@@ -310,6 +346,13 @@ describe('OffersService (Domain Logic Unit Tests)', () => {
         },
         { $set: { status: 'REJECTED' } },
       );
+
+      // FEAT-003-INT: gateway emitOfferAccepted dispatched to winning provider
+      expect(mockGateway.emitOfferAccepted).toHaveBeenCalledTimes(1);
+      const [calledProviderId, calledOffer, calledRequestId] = mockGateway.emitOfferAccepted.mock.calls[0];
+      expect(calledProviderId).toBe(providerId);
+      expect(calledOffer.status).toBe('ACCEPTED');
+      expect(calledRequestId).toBeDefined();
     });
 
     it('should reject offer acceptance with HTTP 409 when Redis lock cannot be acquired', async () => {
