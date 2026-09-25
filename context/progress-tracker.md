@@ -4,17 +4,17 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Phase
 
-- **Specification & Architecture Setup Complete** (Ready for Feature-by-Feature Implementation)
+- **Feature Implementation (Phase 2)** — Backend & Frontend Modules
 
 ## Current Goal
 
-- Begin execution of `FEAT-001-BE-auth` (Authentication & RBAC Backend Module).
+- Begin execution of `FEAT-001-FE-auth` (Authentication UI in Next.js).
 
 ## Feature Implementation Pipeline
 
 | Feature ID | Feature Name | Layer | Status | Test Report |
 | :--- | :--- | :--- | :--- | :--- |
-| **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE, FE, VERIFY | Not Started | `feature-test-reports/FEAT-001-test-report.md` |
+| **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Next), VERIFY | In Progress | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-002-test-report.md` |
 | **FEAT-003** | Offers & Concurrency Protection | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-003-test-report.md` |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
@@ -29,14 +29,16 @@ Update this file after every meaningful implementation change and test report co
 - Synchronization of rules to `.agents/rules/` and `rules/` for unconditional prompt-time enforcement.
 - Creation of `000-shared-contracts.md`, `000-nonfunctional-contracts.md`, and `000-infra-contracts.md`.
 - Complete feature specs authored in `context/feature-specs/` matching `plan.md`.
+- **`FEAT-001-BE-auth.md`**: User Authentication & RBAC backend module implemented with NestJS, bcrypt (10 rounds), JWT strategies, `User` Mongoose schema with unique indexes, `RegisterDto`, `LoginDto`, `JwtAuthGuard`, `RolesGuard`, `HttpExceptionFilter`, and 28 passing unit/API automated tests. Verified with test report [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md).
 
 ## In Progress
 
-- Phase 1: Context and Specification initialization.
+- `FEAT-001`: User Auth & Roles (BE completed; moving to FE layer).
 
 ## Next Up
 
-- `FEAT-001-BE-auth.md` implementation (User registration, login, JWT issuance, password hashing, roles guard).
+- `FEAT-001-FE-auth.md` (Authentication UI in Next.js).
+- `FEAT-001-VERIFY-auth.md` (Formal verification pass).
 
 ## Open Questions & Assumptions
 
@@ -51,5 +53,6 @@ Update this file after every meaningful implementation change and test report co
 
 ## Session Notes
 
-- All 7 context files, rules, contracts, and feature specs are aligned with the 72-hour assessment scope.
-- Next prompt session should execute `FEAT-001-BE-auth`.
+- `FEAT-001-BE` achieved 100% test pass rate with 0 failing and 0 skipped tests.
+- Next implementation target is `FEAT-001-FE-auth`.
+

@@ -1,0 +1,19 @@
+{
+  "name": "flogen-ai-marketplace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-Time Service Marketplace (FlogenAI) Monorepo",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "test:unit": "npm run test:unit --workspace=apps/backend",
+    "test:api": "npm run test:api --workspace=apps/backend",
+    "test:backend": "npm run test --workspace=apps/backend",
+    "build:backend": "npm run build --workspace=apps/backend",
+    "typecheck:backend": "npm run typecheck --workspace=apps/backend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
