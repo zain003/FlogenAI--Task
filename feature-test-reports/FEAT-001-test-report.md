@@ -1,7 +1,7 @@
-# Test Report: FEAT-001 — User Authentication & Role Authorization (Backend)
+# Test Report: FEAT-001 — User Authentication & Role Authorization (Full Stack)
 
-**Feature ID:** `FEAT-001-BE`  
-**Spec Reference:** `context/feature-specs/FEAT-001-BE-auth.md`  
+**Feature ID:** `FEAT-001` (Backend & Frontend)  
+**Spec References:** `context/feature-specs/FEAT-001-BE-auth.md`, `context/feature-specs/FEAT-001-FE-auth.md`, `context/feature-specs/FEAT-001-VERIFY-auth.md`  
 **Date Tested:** `2026-09-25`  
 **SQA Status:** `PASSED`  
 **Tester:** `SQA Automation Engineer (Antigravity Agent)`  
@@ -12,18 +12,19 @@
 
 | Total Test Cases | Passed | Failed | Skipped | Pass Rate | SQA Verdict |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `28` | `28` | `0` | `0` | `100%` | **PASSED** |
+| `47` | `47` | `0` | `0` | `100%` | **PASSED** |
 
-> **SQA Gate Policy:** Zero failing tests allowed. All tests passed with 100% pass rate.
+> **SQA Gate Policy:** Zero failing tests allowed. All 47 multi-layer test cases (28 Backend Jest tests + 19 Frontend Fake DOM Vitest tests) passed with 100% pass rate.
 
 ---
 
 ## 2. Test Environment & Tools
 
-- **Test Runner:** Jest 29.7.0 (`ts-jest` 29.2.5)
-- **Runtime Environment:** Node.js v24.13.0, NestJS 10.4.15
-- **API Test Utility:** Supertest 7.0.0 via NestJS `Test.createTestingModule`
-- **Database / Data Layer Mocking:** Mongoose Schema definitions & Mongoose Model mocks with Jest
+- **Backend Test Runner:** Jest 29.7.0 (`ts-jest` 29.4.14)
+- **Frontend Test Runner:** Vitest 3.2.7 (`jsdom` 26.0.0, `@vitejs/plugin-react` 4.3.4)
+- **DOM Engine & Simulators:** `@testing-library/react` 16.2.0, `@testing-library/user-event` 14.6.1, `@testing-library/jest-dom` 6.6.3
+- **Runtime Environment:** Node.js v24.13.0, NestJS 10.4.15, Next.js 15.5.26, React 19.0.0
+- **API Test Utility:** Supertest 7.3.0 via NestJS `Test.createTestingModule`
 - **Security & Cryptography:** bcrypt 5.1.1 (10 salt rounds), @nestjs/jwt 10.2.0, passport-jwt 4.0.1
 
 ---
@@ -32,21 +33,53 @@
 
 | AC ID | Acceptance Criterion | Test File & Test Name | Status |
 | :--- | :--- | :--- | :--- |
-| **AC-1** | `POST /api/auth/register` with valid customer details returns HTTP 201, user record without `passwordHash`, and signed JWT | `src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/register - should register a new customer and return JWT with HTTP 201` | `PASS` |
-| **AC-2** | Duplicate email registration returns HTTP 409 Conflict | `src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/register - should reject registration with duplicate email with HTTP 409 Conflict` | `PASS` |
-| **AC-3** | Registration with invalid email or weak password returns HTTP 400 Bad Request with field errors | `src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/register - should reject registration with invalid email or weak password with HTTP 400` | `PASS` |
-| **AC-4** | `POST /api/auth/login` with correct password returns HTTP 200 and signed JWT | `src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/login - should authenticate valid credentials and return signed JWT with HTTP 200` | `PASS` |
-| **AC-5** | `POST /api/auth/login` with incorrect password returns HTTP 401 Unauthorized | `src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/login - should reject login with wrong password with HTTP 401 Unauthorized` | `PASS` |
-| **AC-6** | `GET /api/auth/me` without Authorization header returns HTTP 401 | `src/modules/auth/auth.controller.spec.ts` > `GET /api/auth/me - should reject access with HTTP 401 without Authorization header` | `PASS` |
-| **AC-7** | `GET /api/auth/me` with valid JWT returns HTTP 200 and sanitized UserEntity | `src/modules/auth/auth.controller.spec.ts` > `GET /api/auth/me - should allow access to protected route when valid JWT is supplied` | `PASS` |
-| **AC-8** | Route protected by `@Roles('customer')` returns HTTP 403 when accessed by user with role `'provider'` | `src/modules/auth/auth.controller.spec.ts` > `RBAC Route Protection - should reject access with HTTP 403 when user role does not match required @Roles()` | `PASS` |
+| **AC-1** | `POST /api/auth/register` with valid customer details returns HTTP 201, user record without `passwordHash`, and signed JWT | `apps/backend/src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/register - should register a new customer and return JWT with HTTP 201` | `PASS` |
+| **AC-2** | Duplicate email registration returns HTTP 409 Conflict | `apps/backend/src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/register - should reject registration with duplicate email with HTTP 409 Conflict` | `PASS` |
+| **AC-3** | Registration with invalid email or weak password returns HTTP 400 Bad Request with field errors | `apps/backend/src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/register - should reject registration with invalid email or weak password with HTTP 400` | `PASS` |
+| **AC-4** | `POST /api/auth/login` with correct password returns HTTP 200 and signed JWT | `apps/backend/src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/login - should authenticate valid credentials and return signed JWT with HTTP 200` | `PASS` |
+| **AC-5** | `POST /api/auth/login` with incorrect password returns HTTP 401 Unauthorized | `apps/backend/src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/login - should reject login with wrong password with HTTP 401 Unauthorized` | `PASS` |
+| **AC-6** | `GET /api/auth/me` without Authorization header returns HTTP 401 | `apps/backend/src/modules/auth/auth.controller.spec.ts` > `GET /api/auth/me - should reject access with HTTP 401 without Authorization header` | `PASS` |
+| **AC-7** | `GET /api/auth/me` with valid JWT returns HTTP 200 and sanitized UserEntity | `apps/backend/src/modules/auth/auth.controller.spec.ts` > `GET /api/auth/me - should allow access to protected route when valid JWT is supplied` | `PASS` |
+| **AC-8** | Route protected by `@Roles('customer')` returns HTTP 403 when accessed by user with role `'provider'` | `apps/backend/src/modules/auth/auth.controller.spec.ts` > `RBAC Route Protection - should reject access with HTTP 403 when user role does not match required @Roles()` | `PASS` |
+| **AC-9** | Submitting valid credentials stores JWT in localStorage and redirects Customer to `/customer/requests` or Provider to `/provider/browse` | `apps/frontend/src/tests/login.spec.tsx` > `should store JWT in localStorage and redirect upon successful authentication` | `PASS` |
+| **AC-10** | Submitting incorrect password displays error banner without page reload | `apps/frontend/src/tests/login.spec.tsx` > `should display error alert banner when API responds with 401` | `PASS` |
+| **AC-11** | Registration allows selecting either "Customer" or "Provider" role with active visual feedback | `apps/frontend/src/tests/register.spec.tsx` > `should switch form role between customer and provider on register page` | `PASS` |
+| **AC-12** | Registration form validates inputs and displays prominent 409 Conflict banner when email already exists | `apps/frontend/src/tests/register.spec.tsx` > `should display error alert banner when API responds with 409` | `PASS` |
+| **AC-13** | Submit button shows loading spinner and is disabled during pending network submission | `apps/frontend/src/tests/login.spec.tsx` & `register.spec.tsx` > `should disable submit button and show loading indicator during submission` | `PASS` |
+| **AC-14** | Logging out clears JWT from localStorage and redirects to `/login` | `apps/frontend/src/tests/auth-context.spec.tsx` > `should clear token and redirect to /login upon logout` | `PASS` |
+| **AC-15** | Expired/malformed token in localStorage triggers clean cache invalidation and reset to logged-out state | `apps/frontend/src/tests/auth-context.spec.tsx` > `should clear token and reset state when stored token is expired or invalid` | `PASS` |
+| **AC-16** | NavigationBar displays live sync status, user role pill, email, and logout action dynamically | `apps/frontend/src/tests/navigation-bar.spec.tsx` > `should render customer role badge, email, and logout button when authenticated as customer` | `PASS` |
 
 ---
 
 ## 4. Multi-Layer Test Execution Results
 
 ### 4.1 Frontend Layer (Fake DOM / Component Testing)
-*N/A for FEAT-001-BE; Frontend UI layer is scheduled for FEAT-001-FE.*
+- [x] **Component Rendering:** LoginForm and RegisterForm render accessible inputs with labels and initial states.
+- [x] **User Interactions:** Simulated user inputs (typing, clicking, submitting) trigger state changes.
+- [x] **Client Validation:** Empty or malformed inputs trigger inline alerts before network requests.
+- [x] **Loading Indicators:** Submit button disabled with spinning SVG during request processing.
+- [x] **Error & Validation Messages:** Prominent error banners (`--state-error`) displayed for 401, 409, and network failures.
+- [x] **Accessibility (a11y):** Form controls labeled with `htmlFor`, `aria-live="polite"`, `role="alert"`, and focus states.
+
+*Execution Log (`npm run test:ui --workspace=apps/frontend`):*
+```bash
+ ✓ src/tests/auth-context.spec.tsx (4 tests) 178ms
+ ✓ src/tests/navigation-bar.spec.tsx (4 tests) 228ms
+ ✓ src/tests/login.spec.tsx (5 tests) 2003ms
+   ✓ LoginForm (Fake DOM / Component Tests) > should disable submit button and show loading indicator during submission  594ms
+   ✓ LoginForm (Fake DOM / Component Tests) > should display error alert banner when API responds with 401  531ms
+   ✓ LoginForm (Fake DOM / Component Tests) > should store JWT in localStorage and redirect upon successful authentication  730ms
+ ✓ src/tests/register.spec.tsx (6 tests) 3820ms
+   ✓ RegisterForm (Fake DOM / Component Tests) > should validate short name, invalid email, or short password before calling API  1148ms
+   ✓ RegisterForm (Fake DOM / Component Tests) > should disable submit button and show loading indicator during submission  846ms
+   ✓ RegisterForm (Fake DOM / Component Tests) > should display error alert banner when API responds with 409  789ms
+   ✓ RegisterForm (Fake DOM / Component Tests) > should register provider and redirect to /provider/browse with stored JWT  822ms
+
+ Test Files  4 passed (4)
+      Tests  19 passed (19)
+   Duration  6.53s
+```
 
 ---
 
@@ -58,23 +91,27 @@
 
 *Execution Log (`npm run test:api --workspace=apps/backend`):*
 ```bash
-PASS src/modules/auth/auth.controller.spec.ts
+PASS src/modules/auth/auth.controller.spec.ts (5.067 s)
   AuthController (API Layer Contract Tests)
     POST /api/auth/register
-      √ should register a new customer and return JWT with HTTP 201 (350 ms)
+      √ should register a new customer and return JWT with HTTP 201 (78 ms)
       √ should reject registration with duplicate email with HTTP 409 Conflict (12 ms)
-      √ should reject registration with invalid email or weak password with HTTP 400 (7 ms)
-      √ should reject registration with empty body with HTTP 400 (9 ms)
+      √ should reject registration with invalid email or weak password with HTTP 400 (9 ms)
+      √ should reject registration with empty body with HTTP 400 (7 ms)
     POST /api/auth/login
-      √ should authenticate valid credentials and return signed JWT with HTTP 200 (6 ms)
-      √ should reject login with wrong password with HTTP 401 Unauthorized (5 ms)
-      √ should reject login with malformed email with HTTP 400 Bad Request (7 ms)
+      √ should authenticate valid credentials and return signed JWT with HTTP 200 (7 ms)
+      √ should reject login with wrong password with HTTP 401 Unauthorized (7 ms)
+      √ should reject login with malformed email with HTTP 400 Bad Request (6 ms)
     GET /api/auth/me
-      √ should reject access with HTTP 401 without Authorization header (6 ms)
+      √ should reject access with HTTP 401 without Authorization header (7 ms)
       √ should allow access to protected route when valid JWT is supplied (7 ms)
     RBAC Route Protection
       √ should allow access to customer-protected route when role is customer (6 ms)
-      √ should reject access with HTTP 403 when user role does not match required @Roles() (5 ms)
+      √ should reject access with HTTP 403 when user role does not match required @Roles() (6 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       11 passed, 11 total
+Time:        5.361 s
 ```
 
 ---
@@ -90,31 +127,24 @@ PASS src/modules/auth/auth.controller.spec.ts
 PASS src/modules/auth/auth.service.spec.ts
   AuthService (Unit Tests)
     register
-      √ should register a new customer and return JWT with HTTP 201 (80 ms)
-      √ should trim and normalize email to lowercase (67 ms)
-      √ should reject registration with duplicate email with HTTP 409 Conflict (9 ms)
-      √ should handle MongoDB duplicate key error (code 11000) and throw 409 Conflict (52 ms)
+      √ should register a new customer and return JWT with HTTP 201 (62 ms)
+      √ should trim and normalize email to lowercase (79 ms)
+      √ should reject registration with duplicate email with HTTP 409 Conflict (19 ms)
+      √ should handle MongoDB duplicate key error (code 11000) and throw 409 Conflict (105 ms)
     login
-      √ should authenticate valid credentials and return signed JWT with HTTP 200 (102 ms)
-      √ should reject login with wrong password with HTTP 401 Unauthorized (101 ms)
+      √ should authenticate valid credentials and return signed JWT with HTTP 200 (191 ms)
+      √ should reject login with wrong password with HTTP 401 Unauthorized (191 ms)
       √ should reject login when user email does not exist with HTTP 401 Unauthorized (2 ms)
     getProfile
       √ should return user profile without passwordHash for valid userId (2 ms)
-      √ should throw NotFoundException if user is not found (1 ms)
+      √ should throw NotFoundException if user is not found (2 ms)
 
 PASS src/modules/auth/guards/roles.guard.spec.ts
-  RolesGuard (Unit Tests)
-    √ should allow access if no roles are required on the route (2 ms)
-    √ should allow access if user has the required customer role (1 ms)
-    √ should allow access if user has provider role and provider is allowed (1 ms)
-    √ should throw ForbiddenException if user has role provider but route requires customer (8 ms)
-    √ should throw ForbiddenException if request has no authenticated user (1 ms)
-
 PASS src/modules/auth/guards/jwt-auth.guard.spec.ts
-  JwtAuthGuard (Unit Tests)
-    √ should return user if user exists and no error (1 ms)
-    √ should throw UnauthorizedException if error is provided (1 ms)
-    √ should throw UnauthorizedException if user is missing (1 ms)
+
+Test Suites: 3 passed, 3 total
+Tests:       17 passed, 17 total
+Time:        4.12 s
 ```
 
 ---
@@ -130,12 +160,15 @@ PASS src/modules/auth/guards/jwt-auth.guard.spec.ts
 
 | Scenario | Input / Trigger | Expected Outcome | Verified |
 | :--- | :--- | :--- | :---: |
-| **Empty Request Body** | `{}` | 400 Bad Request with validation errors array | `YES` |
-| **Email Whitespace & Uppercase** | `"  CUSTOMER@TEST.COM  "` | Normalized to `"customer@test.com"` | `YES` |
-| **Short Password** | Password with 5 chars (< 8) | 400 Bad Request: "password must be at least 8 characters long" | `YES` |
+| **Empty Request Body (BE)** | `{}` | 400 Bad Request with validation errors array | `YES` |
+| **Empty Form Fields (FE)** | Empty inputs + submit | Client-side validation triggers alert before network dispatch | `YES` |
+| **Email Whitespace & Case** | `"  CUSTOMER@TEST.COM  "` | Normalized to `"customer@test.com"` | `YES` |
+| **Short Password (< 8 chars)** | Password with 5 chars | Prevented on frontend and rejected on backend with 400 | `YES` |
 | **Invalid Role Enum** | `{ role: "admin" }` | 400 Bad Request: "role must be either customer or provider" | `YES` |
-| **Unauthenticated Profile Access** | `GET /api/auth/me` without Bearer token | 401 Unauthorized with descriptive payload | `YES` |
-| **Provider on Customer Route** | Provider token on `@Roles('customer')` endpoint | 403 Forbidden with descriptive message | `YES` |
+| **Duplicate Registration** | Register with existing email | 409 Conflict with clear error banner on frontend | `YES` |
+| **Expired/Corrupted Stored Token**| Malformed string in localStorage | AuthContext purges storage and resets session cleanly | `YES` |
+| **Unauthenticated Profile Access**| `GET /api/auth/me` without Bearer | 401 Unauthorized with descriptive payload | `YES` |
+| **Provider on Customer Route** | Provider token on `@Roles('customer')` | 403 Forbidden with descriptive message | `YES` |
 
 ---
 
@@ -144,14 +177,16 @@ PASS src/modules/auth/guards/jwt-auth.guard.spec.ts
 | Bug ID | Description | Root Cause | Resolution | Retest Status |
 | :--- | :--- | :--- | :--- | :--- |
 | `BUG-01` | Duplicate Mongoose schema index warning in console | Both `@Prop({ unique: true })` and `UserSchema.index({ email: 1 }, { unique: true })` were defined | Removed redundant explicit `UserSchema.index` call | `VERIFIED FIXED` |
+| `BUG-02` | Multiple element match on `getByRole('button', { name: /customer/i })` in register test | Both the role toggle button and the submit button ("Register as Customer") matched the regex | Targeted role toggle via test ID `role-customer-btn` | `VERIFIED FIXED` |
 
 ---
 
 ## 7. SQA Sign-Off & Recommendation
 
-- [x] **100% Test Pass Rate Achieved (28/28 tests passed)**
+- [x] **100% Test Pass Rate Achieved (47/47 tests passed across BE and FE)**
 - [x] **Zero Unresolved Defects**
-- [x] **TypeScript Compilation Clean (`tsc --noEmit` passed with 0 errors)**
-- [x] **Feature Ready for Merge / Next Feature Transition (`FEAT-001-FE`)**
+- [x] **TypeScript Compilation Clean (`tsc --noEmit` passed on backend and frontend)**
+- [x] **Next.js Production Build Succeeded (`next build` generated static routes cleanly)**
+- [x] **Full Stack Feature Gate Cleared: Ready for FEAT-002-BE**
 
 **Final SQA Verdict:** **APPROVED (PASSED 100%)**

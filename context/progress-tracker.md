@@ -8,14 +8,14 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-001-FE-auth` (Authentication UI in Next.js).
+- Begin execution of `FEAT-002-BE-requests` (Service Requests REST CRUD backend module).
 
 ## Feature Implementation Pipeline
 
 | Feature ID | Feature Name | Layer | Status | Test Report |
 | :--- | :--- | :--- | :--- | :--- |
-| **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Next), VERIFY | In Progress | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
-| **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-002-test-report.md` |
+| **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
+| **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Next), FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-002-test-report.md` |
 | **FEAT-003** | Offers & Concurrency Protection | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-003-test-report.md` |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
@@ -30,15 +30,15 @@ Update this file after every meaningful implementation change and test report co
 - Creation of `000-shared-contracts.md`, `000-nonfunctional-contracts.md`, and `000-infra-contracts.md`.
 - Complete feature specs authored in `context/feature-specs/` matching `plan.md`.
 - **`FEAT-001-BE-auth.md`**: User Authentication & RBAC backend module implemented with NestJS, bcrypt (10 rounds), JWT strategies, `User` Mongoose schema with unique indexes, `RegisterDto`, `LoginDto`, `JwtAuthGuard`, `RolesGuard`, `HttpExceptionFilter`, and 28 passing unit/API automated tests. Verified with test report [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md).
+- **`FEAT-001-FE-auth.md`**: Authentication UI & Session Handling implemented with Next.js (App Router, React 19), Tailwind CSS design tokens adhering to `context/ui-context.md`, `api-client.ts`, `AuthContext` with automatic localStorage token hydration and clean invalidation, accessible `LoginForm`, `RegisterForm` with Customer/Provider role toggle, dynamic `NavigationBar` with role badges and live sync indicator, and 19 passing Fake DOM automated tests (Vitest + React Testing Library). Combined FEAT-001 test count: 47/47 passing (100%).
 
 ## In Progress
 
-- `FEAT-001`: User Auth & Roles (BE completed; moving to FE layer).
+- Pre-flight preparation for `FEAT-002-BE-requests`.
 
 ## Next Up
 
-- `FEAT-001-FE-auth.md` (Authentication UI in Next.js).
-- `FEAT-001-VERIFY-auth.md` (Formal verification pass).
+- `FEAT-002-BE-requests.md` (Service Requests REST CRUD backend module).
 
 ## Open Questions & Assumptions
 
@@ -53,6 +53,8 @@ Update this file after every meaningful implementation change and test report co
 
 ## Session Notes
 
-- `FEAT-001-BE` achieved 100% test pass rate with 0 failing and 0 skipped tests.
-- Next implementation target is `FEAT-001-FE-auth`.
+- `FEAT-001-BE` achieved 100% test pass rate with 0 failing and 0 skipped tests (28 tests).
+- `FEAT-001-FE` achieved 100% test pass rate with 0 failing and 0 skipped tests (19 tests).
+- All 47 tests across backend and frontend pass cleanly with zero compiler/linter warnings.
+- Next implementation target is `FEAT-002-BE-requests`.
 

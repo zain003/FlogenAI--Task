@@ -11,7 +11,10 @@
     "test:api": "npm run test:api --workspace=apps/backend",
     "test:backend": "npm run test --workspace=apps/backend",
     "build:backend": "npm run build --workspace=apps/backend",
-    "typecheck:backend": "npm run typecheck --workspace=apps/backend"
+    "typecheck:backend": "npm run typecheck --workspace=apps/backend",
+    "test:ui": "npm run test:ui --workspace=apps/frontend",
+    "build:frontend": "npm run build --workspace=apps/frontend",
+    "typecheck:frontend": "npm run typecheck --workspace=apps/frontend"
   },
   "keywords": [],
   "author": "",

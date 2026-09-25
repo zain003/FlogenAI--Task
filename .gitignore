@@ -10,7 +10,9 @@ coverage/
 dist/
 build/
 .next/
+**/.next/
 out/
+*.tsbuildinfo
 
 # Environment files
 .env

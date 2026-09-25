@@ -9,8 +9,8 @@ This index tracks all feature specifications, dependencies, implementation statu
 | File ID | Layer | Priority | Feature Name | Depends On | Est. Lines | Status | Test Report |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **FEAT-001-BE** | Backend | P0 | Auth & RBAC (JWT, bcrypt) | `000-shared-contracts.md` | ~120 | ☑ Passed | [`feature-test-reports/FEAT-001-test-report.md`](../../feature-test-reports/FEAT-001-test-report.md) |
-| **FEAT-001-FE** | Frontend | P0 | Auth UI (Login & Register) | `FEAT-001-BE` | ~110 | ⏳ In Progress | - |
-| **FEAT-001-VERIFY** | Verify | P0 | Auth SQA Verification Pass | `FEAT-001-BE`, `FEAT-001-FE` | ~70 | ☐ Not Started | `feature-test-reports/FEAT-001-test-report.md` |
+| **FEAT-001-FE** | Frontend | P0 | Auth UI (Login & Register) | `FEAT-001-BE` | ~110 | ☑ Passed | [`feature-test-reports/FEAT-001-test-report.md`](../../feature-test-reports/FEAT-001-test-report.md) |
+| **FEAT-001-VERIFY** | Verify | P0 | Auth SQA Verification Pass | `FEAT-001-BE`, `FEAT-001-FE` | ~70 | ☑ Passed | [`feature-test-reports/FEAT-001-test-report.md`](../../feature-test-reports/FEAT-001-test-report.md) |
 | **FEAT-002-BE** | Backend | P0 | Service Requests REST CRUD | `FEAT-001-VERIFY` | ~130 | ☐ Not Started | - |
 | **FEAT-002-FE** | Frontend | P0 | Request Creation & Feeds | `FEAT-002-BE` | ~120 | ☐ Not Started | - |
 | **FEAT-002-INT** | Integration| P0 | Socket.IO `request:created` Broadcast | `FEAT-002-BE` | ~110 | ☐ Not Started | - |
