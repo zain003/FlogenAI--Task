@@ -66,15 +66,16 @@ Forms / Error Handling
 - **Out of Scope:** Request DTOs (covered by ISSUE-001).
 
 ## Acceptance Criteria
-- [ ] Submitting whitespace-only message returns HTTP `400 Bad Request`.
-- [ ] Error response contains clear feedback indicating message must contain at least 5 non-whitespace characters.
-- [ ] Zero HTTP 500 errors occur on whitespace inputs.
+- [x] Submitting whitespace-only message returns HTTP `400 Bad Request`.
+- [x] Error response contains clear feedback indicating message must contain at least 5 non-whitespace characters.
+- [x] Zero HTTP 500 errors occur on whitespace inputs.
 
 ## Related Feature/Ticket ID
 `FEAT-003-BE`
 
 ## Status
-Open
+Verified Fixed
 
 ## Notes
-Consolidated with ISSUE-001 under the input sanitization & Mongoose validation failure root cause pattern per Deduplication Rule.
+- Resolution: Added `@Transform(({ value }) => typeof value === 'string' ? value.trim() : value)` in `CreateOfferDto` to trim `message` before `@MinLength(5)` validation.
+- Verified with unit tests in `offers.controller.spec.ts` passing 100%.

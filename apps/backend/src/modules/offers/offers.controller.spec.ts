@@ -204,6 +204,21 @@ describe('OffersController (API Layer Contract Tests)', () => {
       expect(mockOffersService.createOffer).not.toHaveBeenCalled();
     });
 
+    it('should reject offer submission with whitespace-only message with HTTP 400 (ISSUE-002)', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/requests/${validRequestId}/offers`)
+        .set('Authorization', 'Bearer provider-token')
+        .send({
+          price: 200,
+          message: '     ',
+        })
+        .expect(400);
+
+      expect(res.body.statusCode).toBe(400);
+      expect(res.body.errors).toBeDefined();
+      expect(mockOffersService.createOffer).not.toHaveBeenCalled();
+    });
+
     it('should reject offer submission with invalid ObjectId format with HTTP 400', async () => {
       await request(app.getHttpServer())
         .post('/api/requests/not-a-valid-id/offers')

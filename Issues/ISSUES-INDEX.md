@@ -8,7 +8,7 @@ This index summarizes all findings identified during the QA audit executed from 
 
 | Total Issues | Critical | High | Medium | Low | Open | Verified Fixed |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **7** | **0** | **2** | **3** | **2** | **6** | **1** |
+| **7** | **0** | **2** | **3** | **2** | **5** | **2** |
 
 - **Critical Invariants Verified Safe:**
   - Distributed Concurrency: 10 parallel acceptance race conditions verified with 0 double-acceptances (Tier 1 Redis mutex + Tier 2 MongoDB atomic mutation).
@@ -25,7 +25,7 @@ This index summarizes all findings identified during the QA audit executed from 
 | Issue ID | Title | Category | Flow / Location | Status | File Link |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **ISSUE-001** | Whitespace-Only Request Title or Description Triggers HTTP 500 Error | Forms / Error Handling | `POST /api/requests` | Verified Fixed | [`ISSUE-001-request-whitespace-input-500-error.md`](./ISSUE-001-request-whitespace-input-500-error.md) |
-| **ISSUE-002** | Whitespace-Only Offer Proposal Message Triggers HTTP 500 Error | Forms / Error Handling | `POST /api/requests/:id/offers` | Open | [`ISSUE-002-offer-whitespace-message-500-error.md`](./ISSUE-002-offer-whitespace-message-500-error.md) |
+| **ISSUE-002** | Whitespace-Only Offer Proposal Message Triggers HTTP 500 Error | Forms / Error Handling | `POST /api/requests/:id/offers` | Verified Fixed | [`ISSUE-002-offer-whitespace-message-500-error.md`](./ISSUE-002-offer-whitespace-message-500-error.md) |
 
 ---
 
