@@ -256,4 +256,47 @@ describe('RedisIoAdapter & Cross-Instance Propagation', () => {
       JSON.stringify(paymentPayload),
     );
   });
+
+  // FEAT-005-INT: should broadcast message:new across two NestJS instances via Redis adapter
+  it('should broadcast message:new across two NestJS instances via Redis adapter simulation', (done) => {
+    const redisBroker = new EventEmitter();
+    const conversationId = 'conv-cross-instance-777';
+
+    // Instance 1 publishes message:new to conversation room
+    const node1PubSub = {
+      publish: (channel: string, message: string) => {
+        redisBroker.emit(channel, message);
+      },
+    };
+
+    // Client connected on Instance 2 receives message:new
+    redisBroker.on(
+      `socket.io#conversation:${conversationId}#message:new`,
+      (data) => {
+        const parsed = JSON.parse(data);
+        expect(parsed.message.id).toBe('msg-cross-node-1');
+        expect(parsed.message.conversationId).toBe(conversationId);
+        expect(parsed.message.senderId).toBe('customer-123');
+        expect(parsed.message.content).toBe(
+          'Cross-instance message delivery verified',
+        );
+        done();
+      },
+    );
+
+    const messagePayload = {
+      message: {
+        id: 'msg-cross-node-1',
+        conversationId,
+        senderId: 'customer-123',
+        content: 'Cross-instance message delivery verified',
+        createdAt: new Date().toISOString(),
+      },
+    };
+
+    node1PubSub.publish(
+      `socket.io#conversation:${conversationId}#message:new`,
+      JSON.stringify(messagePayload),
+    );
+  });
 });

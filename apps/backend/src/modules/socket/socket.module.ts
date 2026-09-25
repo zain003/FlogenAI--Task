@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MarketplaceGateway } from './socket.gateway';
+import { ChatGateway } from './chat.gateway';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
@@ -16,8 +18,9 @@ import { MarketplaceGateway } from './socket.gateway';
         return { secret };
       },
     }),
+    ChatModule,
   ],
-  providers: [MarketplaceGateway],
-  exports: [MarketplaceGateway],
+  providers: [MarketplaceGateway, ChatGateway],
+  exports: [MarketplaceGateway, ChatGateway],
 })
 export class SocketModule {}

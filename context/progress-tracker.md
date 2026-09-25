@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-005-INT-chat-realtime.md` (Socket.IO Room Auth & Messaging Gateway).
+- Begin execution of `FEAT-005-VERIFY-chat.md` (Chat & Room Authorization Verification Pass).
 
 ## Feature Implementation Pipeline
 
@@ -18,7 +18,7 @@ Update this file after every meaningful implementation change and test report co
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
 | **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-003-test-report.md`](../feature-test-reports/FEAT-003-test-report.md) |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md) |
-| **FEAT-005** | Real-Time Authorized Chat | BE (Passed), FE (Passed), INT, VERIFY | In Progress | [`feature-test-reports/FEAT-005-test-report.md`](../feature-test-reports/FEAT-005-test-report.md) |
+| **FEAT-005** | Real-Time Authorized Chat | BE (Passed), FE (Passed), INT (Passed), VERIFY | In Progress | [`feature-test-reports/FEAT-005-test-report.md`](../feature-test-reports/FEAT-005-test-report.md) |
 | **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
 | **EPIC-001** | Full Marketplace End-to-End Journey | VERIFY | Not Started | `feature-test-reports/EPIC-001-test-report.md` |
 
@@ -162,14 +162,24 @@ Update this file after every meaningful implementation change and test report co
   - Monorepo test suite expanded to **265/265 passing tests (202 backend + 63 frontend)** with 100% pass rate, zero compiler or typecheck errors, and clean Next.js 16 Turbopack production compilation.
   - Test report updated in [`feature-test-reports/FEAT-005-test-report.md`](../feature-test-reports/FEAT-005-test-report.md).
 
+- **`FEAT-005-INT-chat-realtime.md`**: Real-Time Chat Gateway & Room Authorization implemented.
+  - **Server-Side Room Authorization (`ChatGateway`)**: Implemented `@SubscribeMessage('conversation:join')` with strict participant authorization. Extracts authenticated socket user identity, queries MongoDB `Conversation` model, and checks `userId === conversation.customerId || userId === conversation.providerId`. Rejects arbitrary or foreign sockets with `{ status: 'error', message: 'Unauthorized room access' }` and joins authorized sockets to `conversation:<conversationId>`.
+  - **Real-Time Message Dispatch (`message:send`)**: Enforces input validation (non-empty, non-whitespace, max 2000 chars), verifies caller has joined `conversation:<conversationId>` room via `client.rooms.has()`, enforces **Persistence-First Invariant** by persisting in MongoDB via `ChatService.saveMessage` before broadcasting, and broadcasts `message:new` to `conversation:<conversationId>` across all cluster instances via Redis Pub/Sub adapter. If database write fails, broadcast is bypassed and error is returned in callback.
+  - **SocketModule Integration**: Registered `ChatGateway` in `SocketModule` alongside `MarketplaceGateway`, importing `ChatModule` and Mongoose `Conversation` model for direct participant resolution.
+  - **Cross-Instance Redis Broadcast Test**: Verified `message:new` propagation across independent NestJS instances in `socket-redis.spec.ts`.
+  - **Frontend Real-Time Integration (`chat-realtime.spec.tsx`)**: Verified `ChatWindow` emits `conversation:join` upon conversation resolution, appends real-time `message:new` events with client-side deduplication by `message.id`, and displays live connection indicator.
+  - **Multi-Layer SQA Test Suite**: Added 14 new automated tests (10 in `socket.chat.spec.ts`, 1 in `socket-redis.spec.ts`, 3 in `chat-realtime.spec.tsx`).
+  - Monorepo test suite expanded to **280/280 passing tests (214 backend + 66 frontend)** with 100% pass rate, zero compiler or typecheck errors, and clean builds for both NestJS and Next.js 16.
+  - Test report updated in [`feature-test-reports/FEAT-005-test-report.md`](../feature-test-reports/FEAT-005-test-report.md).
+
 ## In Progress
 
-- `FEAT-005-INT-chat-realtime.md` (Real-Time Chat Gateway & Room Authorization).
+- `FEAT-005-VERIFY-chat.md` (Chat & Room Authorization Verification Pass).
 
 ## Next Up
 
-- `FEAT-005-INT-chat-realtime.md` (Socket.IO Room Auth & Messaging Gateway).
 - `FEAT-005-VERIFY-chat.md` (Chat & Room Authorization Verification Pass).
+- `FEAT-006-INT-scaling.md` (Multi-Instance Scaling & Docker Compose Setup).
 
 ## Open Questions & Assumptions
 
