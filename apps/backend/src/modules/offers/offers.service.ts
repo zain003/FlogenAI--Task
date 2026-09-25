@@ -2,9 +2,12 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
@@ -15,6 +18,7 @@ import {
 } from '../requests/schemas/service-request.schema';
 import { DistributedLockService } from '../redis/distributed-lock.service';
 import { MarketplaceGateway } from '../socket/socket.gateway';
+import { ChatService } from '../chat/chat.service';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { GetOffersQueryDto } from './dto/get-offers-query.dto';
 import {
@@ -34,6 +38,9 @@ export class OffersService {
     private readonly requestModel: Model<ServiceRequestDocument>,
     private readonly distributedLockService: DistributedLockService,
     private readonly marketplaceGateway: MarketplaceGateway,
+    @Optional()
+    @Inject(forwardRef(() => ChatService))
+    private readonly chatService?: ChatService,
   ) {}
 
   /**
@@ -296,6 +303,21 @@ export class OffersService {
 
       const acceptedEntity = this.toEntity(acceptedOfferDoc || offer);
       const providerId = offer.providerId.toString();
+
+      // Automatically create / ensure conversation for the accepted request
+      try {
+        if (this.chatService) {
+          await this.chatService.getOrCreateConversation(
+            requestId.toString(),
+            customerId.toString(),
+            providerId,
+          );
+        }
+      } catch (chatErr) {
+        this.logger.warn(
+          `Failed to auto-create conversation upon offer acceptance: ${chatErr}`,
+        );
+      }
 
       // Emit real-time events: offer:accepted to the winning provider, request:closed to providers room.
       // Both dispatches happen via Redis Pub/Sub adapter — at-least-once across cluster.

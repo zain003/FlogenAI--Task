@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Offer, OfferSchema } from './schemas/offer.schema';
 import {
@@ -11,6 +11,7 @@ import { AuthModule } from '../auth/auth.module';
 import { RequestsModule } from '../requests/requests.module';
 import { RedisModule } from '../redis/redis.module';
 import { SocketModule } from '../socket/socket.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { SocketModule } from '../socket/socket.module';
     RedisModule,
     // SocketModule provides MarketplaceGateway for real-time offer event dispatch
     SocketModule,
+    forwardRef(() => ChatModule),
   ],
   controllers: [OffersController],
   providers: [OffersService],

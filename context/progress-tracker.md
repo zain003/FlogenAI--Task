@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-005-BE-chat.md` (Chat Conversations & Messages REST CRUD).
+- Begin execution of `FEAT-005-FE-chat.md` (Real-Time Chat Interface in Next.js 16).
 
 ## Feature Implementation Pipeline
 
@@ -18,7 +18,7 @@ Update this file after every meaningful implementation change and test report co
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
 | **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-003-test-report.md`](../feature-test-reports/FEAT-003-test-report.md) |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md) |
-| **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
+| **FEAT-005** | Real-Time Authorized Chat | BE (Passed), FE, INT, VERIFY | In Progress | [`feature-test-reports/FEAT-005-test-report.md`](../feature-test-reports/FEAT-005-test-report.md) |
 | **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
 | **EPIC-001** | Full Marketplace End-to-End Journey | VERIFY | Not Started | `feature-test-reports/EPIC-001-test-report.md` |
 
@@ -141,16 +141,27 @@ Update this file after every meaningful implementation change and test report co
   - Webhook Idempotency Verification: Confirmed 3 duplicate webhook replays execute strictly 1 database mutation and return 3 HTTP 200 responses with zero extra events emitted.
   - Confirmed 100% multi-layer test pass rate with **213/213 passing tests (159 backend + 54 frontend)** and zero failures.
   - Generated and committed formal SQA Test Report in [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md).
+- **`FEAT-005-BE-chat.md`**: Chat Persistence & Conversation Model backend module implemented with NestJS and MongoDB/Mongoose.
+  - **Mongoose Schemas & Performance Indexes**: Defined `Conversation` schema with unique index on `requestId` and participant indexes on `customerId`, `providerId`, and `createdAt`. Defined `Message` schema with compound index on `(conversationId, createdAt)` optimized for sub-50ms reverse-chronological pagination. Resolved all duplicate schema index warnings.
+  - **ChatService Domain Logic**: Implemented `getOrCreateConversation(requestId, customerId, providerId)` with graceful atomic E11000 duplicate key race resolution; `getConversationByRequestId` with participant authorization (HTTP 403) and resolution of accepted requests/offers; `saveMessage(conversationId, senderId, content)` with whitespace sanitization, 1-2000 character validation, and participant checks; `getMessages(conversationId, userId, query)` enforcing participant checks and reverse-chronological pagination (`.sort({ createdAt: -1 })`) with capped limit (default 30, max 50).
+  - **Automatic Conversation Resolution on Acceptance**: Integrated `ChatService.getOrCreateConversation` into `OffersService.acceptOffer` so conversation is automatically created upon offer acceptance.
+  - **REST API Endpoints**: Implemented `ChatController` with `JwtAuthGuard` and `RolesGuard` (`@Roles('customer', 'provider')`):
+    - `GET /api/conversations/by-request/:requestId` -> HTTP 200 / 403 / 400 / 404
+    - `GET /api/conversations/:id/messages` -> HTTP 200 / 403 / 400 / 404
+    - `POST /api/conversations/ensure` -> HTTP 200 / 400
+    - `POST /api/conversations/:id/messages` -> HTTP 201 / 403 / 400 / 404
+  - **Multi-Layer SQA Test Suite**: Added 43 automated tests across `chat.service.spec.ts` (22 tests) and `chat.controller.spec.ts` (21 tests). Verified 100% pass rate.
+  - Monorepo test suite expanded to **256/256 passing tests (202 backend + 54 frontend)** with 100% pass rate, zero compiler or typecheck errors, and clean NestJS compilation.
+  - Formal SQA Test Report committed at [`feature-test-reports/FEAT-005-test-report.md`](../feature-test-reports/FEAT-005-test-report.md).
 
 ## In Progress
 
-- `FEAT-005-BE-chat.md` (Chat Conversations & Messages REST CRUD).
+- `FEAT-005-FE-chat.md` (Real-Time Chat Widget in Next.js 16).
 
 ## Next Up
 
-- `FEAT-005-BE-chat.md` (Chat Conversations & Messages REST CRUD).
 - `FEAT-005-FE-chat.md` (Real-Time Chat Widget).
-- `FEAT-005-INT-chat-gateway.md` (Socket.IO Room Auth & Messaging Gateway).
+- `FEAT-005-INT-chat-realtime.md` (Socket.IO Room Auth & Messaging Gateway).
 - `FEAT-005-VERIFY-chat.md` (Chat & Room Authorization Verification Pass).
 
 ## Open Questions & Assumptions
