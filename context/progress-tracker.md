@@ -8,14 +8,14 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-002-BE-requests` (Service Requests REST CRUD backend module).
+- Begin execution of `FEAT-002-FE-requests` (Request Creation Form & Marketplace Feeds UI).
 
 ## Feature Implementation Pipeline
 
 | Feature ID | Feature Name | Layer | Status | Test Report |
 | :--- | :--- | :--- | :--- | :--- |
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
-| **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Next), FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-002-test-report.md` |
+| **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Next), INT, VERIFY | In Progress | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
 | **FEAT-003** | Offers & Concurrency Protection | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-003-test-report.md` |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
@@ -33,14 +33,15 @@ Update this file after every meaningful implementation change and test report co
 - **`FEAT-001-FE-auth.md`**: Authentication UI & Session Handling implemented with Next.js 16 (App Router, Turbopack, React 19), Tailwind CSS design tokens adhering to `context/ui-context.md`, `api-client.ts`, `AuthContext` with automatic localStorage token hydration and clean invalidation, accessible `LoginForm`, `RegisterForm` with Customer/Provider role toggle, dynamic `NavigationBar` with role badges and live sync indicator, and 19 passing Fake DOM automated tests (Vitest + React Testing Library).
 - **Frontend Framework Upgrade**: Upgraded frontend monorepo workspace to Next.js 16 (`^16.3.6`) with Turbopack and React 19. All 19 Fake DOM tests pass cleanly and `next build` static route compilation verified. Next.js 16 established as the mandatory standard for all current and future frontend features.
 - **`FEAT-001-VERIFY-auth.md`**: Completed 100% formal SQA verification pass. Verified all 7 acceptance criteria across API and UI layers, completed nonfunctional audits for Rate Limiting (HTTP 429 when exceeding 10 login attempts in 60s), Secret Hygiene (strict zero-fallback enforcement of `JWT_SECRET` in `JwtModule` and `JwtStrategy`, plus root and backend `.env.example` templates), and Form Accessibility (`<label htmlFor>`, focus outlines, aria roles). Test suite expanded to 48/48 passing tests (29 Backend + 19 Frontend) with zero compiler or linter errors. Full test report updated in [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md).
+- **`FEAT-002-BE-requests.md`**: Service Requests REST CRUD backend module implemented with NestJS, Mongoose `service_requests` schema with compound index on `(status, customerId)` and single indexes on `status`, `customerId`, `createdAt`, `CreateRequestDto` (title 3-100, description 10-2000, budget >= 1), `GetRequestsQueryDto` (capped pagination: default 20, max 50), `RequestsService` with `create`, `findAll`, `findByCustomer`, `findById`, `RequestsController` with `@UseGuards(JwtAuthGuard, RolesGuard)`, `@Roles('customer')`, route order protection (`/api/requests/my-requests` before `/api/requests/:id`), and 21 passing automated tests (11 API controller tests + 10 service unit tests). Full test report updated in [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md).
 
 ## In Progress
 
-- Pre-flight preparation for `FEAT-002-BE-requests`.
+- Pre-flight preparation for `FEAT-002-FE-requests`.
 
 ## Next Up
 
-- `FEAT-002-BE-requests.md` (Service Requests REST CRUD backend module).
+- `FEAT-002-FE-requests.md` (Request Creation Form & Marketplace Feeds UI).
 
 ## Open Questions & Assumptions
 
