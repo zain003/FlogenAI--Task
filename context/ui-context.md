@@ -42,7 +42,7 @@ All components use CSS custom properties defined in global CSS:
 
 ## Component Library & Icons
 
-- **Component Layer**: Tailwind CSS utility classes with structured CSS variable bindings.
+- **Component Layer**: Next.js 16 App Router with Turbopack, React 19, and Tailwind CSS utility classes with structured CSS variable bindings.
 - **Icons**: Lucide React (stroke width: `1.75px` or `2px`). Sizes: `w-4 h-4` for inline badges/buttons, `w-5 h-5` for action bars and headers.
 - **Real-Time Indicators**:
   - Live pulse indicator in navigation bar (`animate-ping` dot showing Socket.IO connection status).

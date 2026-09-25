@@ -3,7 +3,7 @@
 Every prompt execution and implementation task must strictly adhere to the Real-Time Service Marketplace specifications:
 
 - **Core Goal**: Full-stack marketplace with Customers creating requests and Providers submitting competing offers in real time.
-- **Tech Stack**: Next.js, NestJS (2 instances), MongoDB (Mongoose), Socket.IO with Redis Adapter, Redis (distributed locks, pub/sub, rate limiting), Stripe (test mode, webhooks), Docker Compose.
+- **Tech Stack**: Next.js 16 (App Router, Turbopack, React 19), NestJS (2 instances), MongoDB (Mongoose), Socket.IO with Redis Adapter, Redis (distributed locks, pub/sub, rate limiting), Stripe (test mode, webhooks), Docker Compose.
 - **Roles**: Customer and Provider.
 - **Mandatory Requirements**:
   1. Authenticated Socket.IO connections with Redis adapter for horizontal scaling.

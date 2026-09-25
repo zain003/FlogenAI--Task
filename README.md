@@ -8,7 +8,7 @@ Full-stack, horizontally scalable real-time service marketplace where Customers 
 
 ## Tech Stack
 
-- **Frontend**: Next.js (App Router, TypeScript, React 19)
+- **Frontend**: Next.js 16 (App Router, TypeScript, React 19, Turbopack)
 - **Backend**: NestJS (TypeScript, Node.js, running across 2 instances)
 - **Load Balancer**: Nginx (reverse proxy, WebSocket upgrade, sticky sessions)
 - **Database**: MongoDB (Mongoose ODM)

@@ -2,7 +2,7 @@ Full-Stack & Scalable Systems Technical Assessment
 
 Tech Stack
 
-Next.js · NestJS · MongoDB · Socket.IO · Redis · Stripe · TypeScript · Docker
+Next.js 16 · NestJS · MongoDB · Socket.IO · Redis · Stripe · TypeScript · Docker
 
 Time Limit
 
@@ -394,7 +394,7 @@ Never trust a user ID, role, ownership value, or payment amount simply because t
 
 Do not spend significant time on UI.
 
-A simple Next.js interface is sufficient.
+A simple Next.js 16 interface is sufficient.
 
 Required screens:
 
@@ -420,7 +420,7 @@ Include a simple architecture diagram covering:
 
 
 
-Next.js → Load Balancer → NestJS Instances → MongoDB
+Next.js 16 → Load Balancer → NestJS Instances → MongoDB
 
 NestJS ↔ Redis
 
@@ -588,7 +588,7 @@ Security
 
 Code quality
 
-Next.js implementation
+Next.js 16 implementation
 
 UI polish is a low priority.
 

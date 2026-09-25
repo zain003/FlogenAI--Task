@@ -30,7 +30,8 @@ Update this file after every meaningful implementation change and test report co
 - Creation of `000-shared-contracts.md`, `000-nonfunctional-contracts.md`, and `000-infra-contracts.md`.
 - Complete feature specs authored in `context/feature-specs/` matching `plan.md`.
 - **`FEAT-001-BE-auth.md`**: User Authentication & RBAC backend module implemented with NestJS, bcrypt (10 rounds), JWT strategies, `User` Mongoose schema with unique indexes, `RegisterDto`, `LoginDto`, `JwtAuthGuard`, `RolesGuard`, `HttpExceptionFilter`, and 28 passing unit/API automated tests. Verified with test report [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md).
-- **`FEAT-001-FE-auth.md`**: Authentication UI & Session Handling implemented with Next.js (App Router, React 19), Tailwind CSS design tokens adhering to `context/ui-context.md`, `api-client.ts`, `AuthContext` with automatic localStorage token hydration and clean invalidation, accessible `LoginForm`, `RegisterForm` with Customer/Provider role toggle, dynamic `NavigationBar` with role badges and live sync indicator, and 19 passing Fake DOM automated tests (Vitest + React Testing Library).
+- **`FEAT-001-FE-auth.md`**: Authentication UI & Session Handling implemented with Next.js 16 (App Router, Turbopack, React 19), Tailwind CSS design tokens adhering to `context/ui-context.md`, `api-client.ts`, `AuthContext` with automatic localStorage token hydration and clean invalidation, accessible `LoginForm`, `RegisterForm` with Customer/Provider role toggle, dynamic `NavigationBar` with role badges and live sync indicator, and 19 passing Fake DOM automated tests (Vitest + React Testing Library).
+- **Frontend Framework Upgrade**: Upgraded frontend monorepo workspace to Next.js 16 (`^16.3.6`) with Turbopack and React 19. All 19 Fake DOM tests pass cleanly and `next build` static route compilation verified. Next.js 16 established as the mandatory standard for all current and future frontend features.
 - **`FEAT-001-VERIFY-auth.md`**: Completed 100% formal SQA verification pass. Verified all 7 acceptance criteria across API and UI layers, completed nonfunctional audits for Rate Limiting (HTTP 429 when exceeding 10 login attempts in 60s), Secret Hygiene (strict zero-fallback enforcement of `JWT_SECRET` in `JwtModule` and `JwtStrategy`, plus root and backend `.env.example` templates), and Form Accessibility (`<label htmlFor>`, focus outlines, aria roles). Test suite expanded to 48/48 passing tests (29 Backend + 19 Frontend) with zero compiler or linter errors. Full test report updated in [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md).
 
 ## In Progress
@@ -51,6 +52,7 @@ Update this file after every meaningful implementation change and test report co
 1. **Dual-Guard Concurrency**: To ensure 100% safety even if Redis loses connectivity or is partitioned, offer acceptance uses Redis mutex *and* MongoDB atomic state check.
 2. **Socket.IO Redis Adapter**: Emits are transparently broadcast across NestJS nodes; room joins are replicated in Redis Pub/Sub channels.
 3. **Template-Driven SQA Reports**: Every completed feature must produce a report in `feature-test-reports/` based on `template-test-report.md` before proceeding.
+4. **Next.js 16 Standard**: Monorepo upgraded to Next.js 16 (`^16.3.6`) with Turbopack and React 19 across all frontend modules; established as mandatory standard for all current and future frontend features.
 
 ## Session Notes
 

@@ -62,8 +62,9 @@
 - **Zero Card Data**: Never accept or process raw card numbers on the backend; all card handling happens in Stripe Elements on the client.
 - **Idempotency**: Check if the Stripe event ID has already been recorded in `processed_events` before running business logic.
 
-## Next.js Frontend Standards
+## Next.js 16 Frontend Standards
 
+- **Framework Version**: Next.js 16 (App Router, Turbopack, React 19) is the mandatory frontend standard for all current and future frontend features.
 - **Minimalist Aesthetic**: Clean, responsive layout adhering to `context/ui-context.md`.
 - **Component Hygiene**: Small, focused components; separate stateful container views from presentational UI.
 - **Error Boundaries & Feedback**: Display clear toast/banner notifications for API errors and loading spinners during network requests.

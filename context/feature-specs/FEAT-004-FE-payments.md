@@ -1,7 +1,7 @@
 # FEAT-004-FE — Stripe Payment Integration & Checkout UI (P0)
 
 **Layer**: Frontend  
-**Goal**: Integrate Stripe Elements (Test Mode) into Next.js so Customers can enter test card details and pay for accepted service offers.
+**Goal**: Integrate Stripe Elements (Test Mode) into Next.js 16 so Customers can enter test card details and pay for accepted service offers.
 
 ## Depends on
 `FEAT-004-BE-payments.md`, `FEAT-003-FE-offers.md`, `context/ui-context.md`
@@ -40,7 +40,7 @@ GET  /api/payments/by-request/:id (param: id) => Promise<PaymentEntity>
 - `apps/frontend/src/lib/stripe-client.ts`
 
 ## Nonfunctional requirements
-- Security: Never inspect, read, or send raw card details through Next.js server actions or custom APIs.
+- Security: Never inspect, read, or send raw card details through Next.js 16 server actions or custom APIs.
 - User feedback: Clear spinner during Stripe confirmation; descriptive error message if card is declined.
 - Focus trap in payment modal.
 

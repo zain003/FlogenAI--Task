@@ -16,7 +16,7 @@ Execute cluster scaling test suites:
 
 ## 2. Acceptance Criteria Verification Matrix
 
-- [ ] AC-1: Next.js, 2 NestJS instances, Redis, MongoDB, and Nginx launch with single command `docker compose up`.
+- [ ] AC-1: Next.js 16, 2 NestJS instances, Redis, MongoDB, and Nginx launch with single command `docker compose up`.
 - [ ] AC-2: Socket.IO client connected to Instance 1 receives messages published from Instance 2.
 - [ ] AC-3: Nginx reverse proxy routes traffic reliably without 502 Bad Gateway errors.
 - [ ] AC-4: Concurrent requests load balanced across instances maintain database consistency.

@@ -1,7 +1,7 @@
 # FEAT-003-FE — Offers UI & Customer Acceptance Flow (P0)
 
 **Layer**: Frontend  
-**Goal**: Build the Provider offer submission form and Customer offer evaluation/acceptance view in Next.js.
+**Goal**: Build the Provider offer submission form and Customer offer evaluation/acceptance view in Next.js 16.
 
 ## Depends on
 `FEAT-003-BE-offers.md`, `FEAT-002-FE-requests.md`, `context/ui-context.md`

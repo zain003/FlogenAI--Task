@@ -1,7 +1,7 @@
 # FEAT-001-FE — Authentication UI & Session Handling (P0)
 
 **Layer**: Frontend  
-**Goal**: Build clean Next.js login and registration forms for Customers and Providers, handling JWT storage and redirect logic.
+**Goal**: Build clean Next.js 16 login and registration forms for Customers and Providers, handling JWT storage and redirect logic.
 
 ## Depends on
 `FEAT-001-BE-auth.md`, `context/ui-context.md`

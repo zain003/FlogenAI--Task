@@ -10,7 +10,7 @@ A full-stack, horizontally scalable real-time service marketplace where Customer
 2. **Deterministic Concurrency Control**: Guarantee zero double-acceptances when multiple concurrent acceptance requests hit different backend instances at the same millisecond, using Redis distributed locking and atomic MongoDB conditional mutations.
 3. **Robust Stripe Payment Lifecycle**: Integrate Stripe Test Mode with server-calculated amounts, cryptographic webhook signature verification, and idempotent event processing preventing duplicate transactions.
 4. **Zero-Trust Security & Authorization**: Enforce JWT authentication on both REST endpoints and Socket.IO handshakes, server-side RBAC (Customer vs. Provider), strict resource ownership checks, and room authorization for chat.
-5. **Turnkey Dockerized Multi-Node Infrastructure**: Spin up the entire multi-instance environment (Next.js frontend, NestJS Instance 1, NestJS Instance 2, MongoDB, Redis, Nginx Load Balancer) with a single `docker compose up`.
+5. **Turnkey Dockerized Multi-Node Infrastructure**: Spin up the entire multi-instance environment (Next.js 16 frontend, NestJS Instance 1, NestJS Instance 2, MongoDB, Redis, Nginx Load Balancer) with a single `docker compose up`.
 
 ## Core User Flow
 
@@ -65,7 +65,7 @@ A full-stack, horizontally scalable real-time service marketplace where Customer
 
 ### In Scope
 - NestJS REST API with modular architecture (`auth`, `requests`, `offers`, `payments`, `chat`, `redis`, `events`).
-- Next.js (App Router, TypeScript) minimal, high-clarity frontend for Customer and Provider journeys.
+- Next.js 16 (App Router, TypeScript, React 19) minimal, high-clarity frontend for Customer and Provider journeys.
 - MongoDB persistence with Mongoose (User, ServiceRequest, Offer, Payment, Conversation, Message, ProcessedEvent).
 - Socket.IO gateway with Redis Adapter and handshake auth.
 - Redis distributed lock service for concurrency safety.

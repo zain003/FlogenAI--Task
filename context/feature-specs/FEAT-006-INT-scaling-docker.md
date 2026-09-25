@@ -1,7 +1,7 @@
 # FEAT-006-INT — Multi-Instance Horizontal Scaling & Docker Topology (P0)
 
 **Layer**: Integration  
-**Goal**: Configure and orchestrate 2 NestJS instances, Next.js, Redis, MongoDB, and Nginx in Docker Compose, proving cross-instance real-time synchronization.
+**Goal**: Configure and orchestrate 2 NestJS instances, Next.js 16, Redis, MongoDB, and Nginx in Docker Compose, proving cross-instance real-time synchronization.
 
 ## Depends on
 `FEAT-001` through `FEAT-005`, `000-infra-contracts.md`
@@ -31,7 +31,7 @@ All implemented modules from `FEAT-001` through `FEAT-005`.
 ```
 
 ## Scope (In)
-- Dockerfiles for NestJS backend (`apps/backend/Dockerfile`) and Next.js frontend (`apps/frontend/Dockerfile`).
+- Dockerfiles for NestJS backend (`apps/backend/Dockerfile`) and Next.js 16 frontend (`apps/frontend/Dockerfile`).
 - Root `docker-compose.yml` linking all 6 services with proper healthchecks and dependency startup order.
 - Nginx configuration (`docker/nginx.conf`) forwarding HTTP `/api` and WebSocket `/socket.io` to upstream pool (`backend-1:3001`, `backend-2:3002`).
 - Demonstration script/test proving Client A connected to Node 1 receives real-time events emitted by Client B connected to Node 2.
@@ -59,7 +59,7 @@ All implemented modules from `FEAT-001` through `FEAT-005`.
 
 ## Implementation steps
 1. Write multi-stage Dockerfile for NestJS backend.
-2. Write multi-stage Dockerfile for Next.js frontend.
+2. Write multi-stage Dockerfile for Next.js 16 frontend.
 3. Configure `docker/nginx.conf` with `upstream nestjs_cluster { ip_hash; server backend-1:3001; server backend-2:3002; }` and WebSocket upgrade headers.
 4. Construct `docker-compose.yml` specifying environment variables and networking.
 5. Create automated cluster verification script `scripts/verify-cluster.ts`.

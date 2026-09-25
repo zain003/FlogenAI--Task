@@ -17,6 +17,6 @@ Every prompt execution and implementation task must follow these code standards:
 - **Stripe**:
   - Signature verification with raw body (`stripe.webhooks.constructEvent`).
   - Never trust client amounts.
-- **Next.js**:
-  - App Router, clean component breakdown, dark theme styling matching `ui-context.md`.
+- **Next.js 16**:
+  - App Router, Turbopack, React 19, clean component breakdown, dark theme styling matching `ui-context.md`.
 - Source of truth: `context/code-standards.md`.

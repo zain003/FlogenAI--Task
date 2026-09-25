@@ -23,7 +23,7 @@
 - **Backend Test Runner:** Jest 29.7.0 (`ts-jest` 29.4.14)
 - **Frontend Test Runner:** Vitest 3.2.7 (`jsdom` 26.0.0, `@vitejs/plugin-react` 4.3.4)
 - **DOM Engine & Simulators:** `@testing-library/react` 16.2.0, `@testing-library/user-event` 14.6.1, `@testing-library/jest-dom` 6.6.3
-- **Runtime Environment:** Node.js v24.13.0, NestJS 10.4.15, Next.js 15.5.26, React 19.0.0
+- **Runtime Environment:** Node.js v24.13.0, NestJS 10.4.15, Next.js 16.3.6 (Turbopack), React 19.0.0
 - **API Test Utility:** Supertest 7.3.0 via NestJS `Test.createTestingModule`
 - **Security & Cryptography:** bcrypt 5.1.1 (10 salt rounds), @nestjs/jwt 10.2.0, passport-jwt 4.0.1
 
@@ -192,7 +192,7 @@ Time:        4.12 s
 - [x] **100% Test Pass Rate Achieved (48/48 tests passed across BE and FE)**
 - [x] **Zero Unresolved Defects**
 - [x] **TypeScript Compilation Clean (`tsc --noEmit` passed on backend and frontend)**
-- [x] **Next.js Production Build Succeeded (`next build` generated static routes cleanly)**
+- [x] **Next.js 16 Production Build Succeeded (`next build` with Turbopack generated static routes cleanly)**
 - [x] **Full Stack Feature Gate Cleared: Ready for FEAT-002-BE**
 
 **Final SQA Verdict:** **APPROVED (PASSED 100%)**

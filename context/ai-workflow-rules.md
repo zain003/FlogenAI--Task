@@ -11,6 +11,7 @@
 
 - Work on one feature specification unit at a time (`FEAT-XXX-BE`, `FEAT-XXX-FE`, `FEAT-XXX-INT`, `FEAT-XXX-VERIFY`).
 - Strictly separate Backend (`BE`), Frontend (`FE`), Integration (`INT`), and Verification (`VERIFY`) layers.
+- Next.js 16 (App Router, Turbopack, React 19) is the mandatory frontend standard for all current and future UI modules.
 - Do not make speculative edits outside the scope defined in the active feature specification.
 - Never invent business logic or data structures not declared in `000-shared-contracts.md` or the active feature spec.
 

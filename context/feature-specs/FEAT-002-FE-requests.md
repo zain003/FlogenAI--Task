@@ -1,7 +1,7 @@
 # FEAT-002-FE — Service Requests UI & Feeds (P0)
 
 **Layer**: Frontend  
-**Goal**: Build the Customer Request Creation form, Customer Requests Dashboard, and Provider Marketplace feed in Next.js.
+**Goal**: Build the Customer Request Creation form, Customer Requests Dashboard, and Provider Marketplace feed in Next.js 16.
 
 ## Depends on
 `FEAT-002-BE-requests.md`, `FEAT-001-FE-auth.md`, `context/ui-context.md`

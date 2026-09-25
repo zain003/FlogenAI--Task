@@ -1,7 +1,7 @@
 # FEAT-005-FE — Real-Time Chat Interface (P0)
 
 **Layer**: Frontend  
-**Goal**: Build a clean real-time chat UI in Next.js for Customers and Providers to communicate on accepted requests.
+**Goal**: Build a clean real-time chat UI in Next.js 16 for Customers and Providers to communicate on accepted requests.
 
 ## Depends on
 `FEAT-005-BE-chat.md`, `context/ui-context.md`

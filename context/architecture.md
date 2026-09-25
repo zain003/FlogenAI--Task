@@ -4,19 +4,19 @@
 
 | Layer | Technology | Role |
 | :--- | :--- | :--- |
-| **Frontend** | Next.js (App Router, TypeScript, React 19) | Minimal, responsive UI for Customer & Provider workflows |
+| **Frontend** | Next.js 16 (App Router, TypeScript, React 19) | Minimal, responsive UI for Customer & Provider workflows |
 | **Backend** | NestJS (TypeScript, Node.js) | Dual-instance REST API & Socket.IO real-time microservices |
 | **Load Balancer** | Nginx | Reverse proxy distributing traffic between NestJS Instance 1 and 2 |
 | **Database** | MongoDB (Mongoose ODM) | Primary persistent data store for users, requests, offers, payments, chats |
 | **Broker / Cache / Lock**| Redis (ioredis, Socket.IO Redis Adapter) | Real-time Pub/Sub clustering, distributed locks, rate limiting |
 | **Payments** | Stripe (Node.js SDK, Test Mode) | PaymentIntent creation, payment verification, webhook signatures |
-| **Orchestration** | Docker & Docker Compose | Containerized execution of Next.js, NestJS x2, Redis, MongoDB, Nginx |
+| **Orchestration** | Docker & Docker Compose | Containerized execution of Next.js 16, NestJS x2, Redis, MongoDB, Nginx |
 
 ## Architecture Diagram
 
 ```
                        ┌───────────────────────────────┐
-                       │      Next.js Frontend         │
+                       │      Next.js 16 Frontend      │
                        │   (Client / App Router)       │
                        └───────────────┬───────────────┘
                                        │ HTTP / WebSockets
@@ -53,8 +53,8 @@
 - `apps/backend/src/modules/chat`: Conversation room lifecycle, message persistence, message pagination, and authorization checks.
 - `apps/backend/src/modules/socket`: Socket.IO gateway with Redis adapter, handshake JWT authentication, and event dispatchers (`request:created`, `offer:created`, `offer:accepted`, `message:new`).
 - `apps/backend/src/modules/redis`: Redis connection management, distributed lock helper (`acquireLock` / `releaseLock`), and rate-limiter service.
-- `apps/frontend/src/app`: Next.js App Router pages: `/auth/login`, `/auth/register`, `/customer/requests`, `/provider/browse`, `/requests/[id]`, `/chat/[id]`.
-- `docker/`: `docker-compose.yml`, Dockerfiles for NestJS and Next.js, and `nginx.conf` for reverse proxy and WebSocket upgrade forwarding.
+- `apps/frontend/src/app`: Next.js 16 App Router pages: `/auth/login`, `/auth/register`, `/customer/requests`, `/provider/browse`, `/requests/[id]`, `/chat/[id]`.
+- `docker/`: `docker-compose.yml`, Dockerfiles for NestJS and Next.js 16, and `nginx.conf` for reverse proxy and WebSocket upgrade forwarding.
 
 ## Storage Model
 

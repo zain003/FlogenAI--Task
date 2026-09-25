@@ -72,7 +72,7 @@ The following test suites are non-negotiable requirements from `Project-scope.md
 ## Layer-by-Layer SQA Standards
 
 ### 1. Frontend Testing (Fake DOM & UI Interaction)
-- **Environment**: Simulated DOM via `jsdom` using Vitest and `@testing-library/react`.
+- **Framework & Runtime**: Next.js 16 (App Router, React 19) components tested via simulated DOM (`jsdom`) using Vitest and `@testing-library/react`.
 - **Component Rendering**: Verify default, loading, empty, error, and populated states.
 - **User Interactions**: Simulate clicks, typing, keyboard navigation, form submission, and focus management using `@testing-library/user-event`.
 - **Fake DOM Mocking**:
