@@ -118,6 +118,23 @@ export interface CreatePaymentIntentDto {
   offerId: string;
 }
 
+export interface ConversationEntity {
+  id: string;
+  requestId: string;
+  customerId: string;
+  providerId: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface MessageEntity {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+}
+
 export function formatCurrency(amount: number): string {
   if (typeof amount !== 'number' || isNaN(amount)) return '$0.00';
   return new Intl.NumberFormat('en-US', {
@@ -357,6 +374,53 @@ class ApiClient {
     getByRequestId: (requestId: string): Promise<PaymentEntity> => {
       return this.request<PaymentEntity>(`/api/payments/by-request/${requestId}`, {
         method: 'GET',
+      });
+    },
+  };
+
+  public conversations = {
+    getByRequestId: (requestId: string): Promise<ConversationEntity> => {
+      return this.request<ConversationEntity>(
+        `/api/conversations/by-request/${requestId}`,
+        {
+          method: 'GET',
+        },
+      );
+    },
+
+    getMessages: (
+      conversationId: string,
+      params?: { page?: number; limit?: number },
+    ): Promise<PaginatedResponse<MessageEntity>> => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+      return this.request<PaginatedResponse<MessageEntity>>(
+        `/api/conversations/${conversationId}/messages${query}`,
+        {
+          method: 'GET',
+        },
+      );
+    },
+
+    sendMessage: (
+      conversationId: string,
+      content: string,
+    ): Promise<MessageEntity> => {
+      return this.request<MessageEntity>(
+        `/api/conversations/${conversationId}/messages`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ content }),
+        },
+      );
+    },
+
+    ensure: (requestId: string): Promise<ConversationEntity> => {
+      return this.request<ConversationEntity>('/api/conversations/ensure', {
+        method: 'POST',
+        body: JSON.stringify({ requestId }),
       });
     },
   };

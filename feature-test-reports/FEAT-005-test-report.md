@@ -1,7 +1,7 @@
-# Test Report: FEAT-005 — Real-Time Authorized Chat (BE Layer)
+# Test Report: FEAT-005 — Real-Time Authorized Chat (BE & FE Layers)
 
-**Feature ID:** `FEAT-005` (`FEAT-005-BE-chat.md`)  
-**Spec Reference:** [`context/feature-specs/FEAT-005-BE-chat.md`](../context/feature-specs/FEAT-005-BE-chat.md)  
+**Feature ID:** `FEAT-005` (`FEAT-005-BE-chat.md` & `FEAT-005-FE-chat.md`)  
+**Spec References:** [`context/feature-specs/FEAT-005-BE-chat.md`](../context/feature-specs/FEAT-005-BE-chat.md), [`context/feature-specs/FEAT-005-FE-chat.md`](../context/feature-specs/FEAT-005-FE-chat.md)  
 **Date Tested:** `2026-09-25`  
 **SQA Status:** `PASSED`  
 **Tester:** `SQA Automation Engineer`  
@@ -12,19 +12,21 @@
 
 | Layer / Scope | Executed Tests | Passed | Failed | Skipped | Pass Rate | SQA Verdict |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **FEAT-005-BE Direct Tests** | **43** | **43** | `0` | `0` | `100%` | **APPROVED** |
-| **Full Monorepo Suite** | **256** (202 BE + 54 FE) | **256** | `0` | `0` | `100%` | **APPROVED (PASSED 100%)** |
+| **FEAT-005 Direct Tests (BE + FE)** | **52** (43 BE + 9 FE) | **52** | `0` | `0` | `100%` | **APPROVED** |
+| **Full Monorepo Suite** | **265** (202 BE + 63 FE) | **265** | `0` | `0` | `100%` | **APPROVED (PASSED 100%)** |
 
-> **SQA Gate Policy:** Zero failing tests allowed. All 43 direct automated tests for `ChatService` and `ChatController` passed with a 100% success rate. The full monorepo suite of 256 tests (202 NestJS backend tests across 19 suites + 54 Next.js 16 frontend tests across 10 suites) passed with zero compiler or typecheck errors.
+> **SQA Gate Policy:** Zero failing tests allowed. All 52 direct automated tests across backend persistence, REST API route contracts, and frontend Next.js 16 components passed with a 100% success rate. The full monorepo suite of 265 tests (202 NestJS backend tests across 19 suites + 63 Next.js 16 frontend tests across 11 suites) passed with zero compiler or typecheck errors and clean production builds on both ends.
 
 ---
 
 ## 2. Test Environment & Tools
 
 - **Backend Runtime:** Node.js v20+, NestJS v10.4.15 (TypeScript `"strict": true`)
-- **API Test Utility:** Supertest v7.0.0 with NestJS `Test.createTestingModule` and `ValidationPipe`
-- **Backend Unit Test Runner:** Jest v29.7.0 (ts-jest)
-- **Database / Mocking:** Mongoose In-Memory Model Schemas (`conversations`, `messages`, `service_requests`, `offers`, `users`)
+- **Backend Test Utility:** Jest v29.7.0 (ts-jest) with Supertest v7.0.0 and NestJS `Test.createTestingModule`
+- **Frontend Framework:** Next.js 16.3.6 (App Router + Turbopack + React 19)
+- **Frontend Test Utility:** Vitest v3.2.7 + React Testing Library (happy-dom / jsdom)
+- **Database / Mocking:** Mongoose Model Schemas (`conversations`, `messages`, `service_requests`, `offers`, `users`)
+- **Real-Time Client:** Socket.IO Client (`useSocket` hook with reconnection management)
 - **Indexes Verified:**
   - `conversations`: unique index on `{ requestId: 1 }`, indexes on `customerId`, `providerId`, and `createdAt`
   - `messages`: compound index on `{ conversationId: 1, createdAt: -1 }` (sub-50ms query optimization), indexes on `conversationId`, `senderId`, and `createdAt`
@@ -46,6 +48,14 @@
 | **AC-9** | Reject chat resolution for OPEN (unaccepted) requests with HTTP 400 | `src/modules/chat/chat.service.spec.ts` > `should reject with 400 if request is still OPEN (not yet accepted)` | `PASS` |
 | **AC-10** | REST API Route guards enforce JWT and RBAC (`@Roles('customer', 'provider')`) on all chat endpoints | `src/modules/chat/chat.controller.spec.ts` > All 18 API route and contract tests | `PASS` |
 | **AC-11** | Automatic conversation resolution/creation upon offer acceptance | `src/modules/offers/offers.service.ts` > `acceptOffer` automatic conversation creation | `PASS` |
+| **AC-12** | Chat window renders with message history, header counterparty, and input box | `src/tests/chat.spec.tsx` > `should render chat window with message history and input box` | `PASS` |
+| **AC-13** | Own messages are styled in `--accent-primary` and aligned right; counterparty in `--bg-surface` aligned left | `src/tests/chat.spec.tsx` > `should display own messages aligned to right and counterparty messages to left` | `PASS` |
+| **AC-14** | Clear input field immediately after sending a message | `src/tests/chat.spec.tsx` > `should clear input field after sending a message` | `PASS` |
+| **AC-15** | Prevent sending empty or whitespace-only messages | `src/tests/chat.spec.tsx` > `should prevent sending empty or whitespace-only messages` | `PASS` |
+| **AC-16** | Auto-scroll to bottom of message container when new message arrives | `src/tests/chat.spec.tsx` > `should auto-scroll to bottom when new message arrives` | `PASS` |
+| **AC-17** | Empty state placeholder displayed when conversation has no messages | `src/tests/chat.spec.tsx` > `should display empty state when conversation has no messages` | `PASS` |
+| **AC-18** | Keyboard usability: Enter sends message; Shift+Enter creates newline | `src/tests/chat.spec.tsx` > `should send on Enter and allow Shift+Enter without sending` | `PASS` |
+| **AC-19** | Long words without spaces wrap cleanly with `break-words` | `src/tests/chat.spec.tsx` > `should wrap long messages without spaces cleanly with break-words` | `PASS` |
 
 ---
 
@@ -142,6 +152,31 @@ PASS src/modules/chat/chat.controller.spec.ts
 
 ---
 
+### 4.4 Frontend Layer (`chat.spec.tsx`)
+
+- [x] **Component Rendering:** Renders header with counterparty label, service request title, live pulse badge, and input container.
+- [x] **Sender Distinction:** Own messages aligned right in Indigo (`bg-indigo-600`); counterparty messages aligned left in dark slate (`bg-gray-800`).
+- [x] **Form Usability:** Enter submits message; Shift+Enter creates a newline; input is immediately cleared after sending.
+- [x] **Auto-scroll:** `scrollIntoView` triggered on incoming messages and on initial render.
+- [x] **Dynamic Route:** `/chat/[requestId]` page built and validated with Next.js 16 Turbopack production compilation.
+
+*Execution Log:*
+```bash
+PASS src/tests/chat.spec.tsx
+  FEAT-005-FE: Real-Time Chat Interface (Fake DOM Tests)
+    ✓ should render chat window with message history and input box (55 ms)
+    ✓ should display own messages aligned to right and counterparty messages to left (32 ms)
+    ✓ should clear input field after sending a message (85 ms)
+    ✓ should prevent sending empty or whitespace-only messages (24 ms)
+    ✓ should auto-scroll to bottom when new message arrives (48 ms)
+    ✓ should display empty state when conversation has no messages (65 ms)
+    ✓ should wrap long messages without spaces cleanly with break-words (2 ms)
+    ✓ should send on Enter and allow Shift+Enter without sending (79 ms)
+    ✓ should display error alert when message sending fails (180 ms)
+```
+
+---
+
 ## 5. Edge Cases & Boundary Analysis
 
 | Scenario | Input / Trigger | Expected Outcome | Verified |
@@ -153,6 +188,8 @@ PASS src/modules/chat/chat.controller.spec.ts
 | **Oversized Message** | Content length > 2000 characters | HTTP 400 Bad Request | `YES` |
 | **Excessive Pagination** | `GET /messages?limit=999` | HTTP 400 Validation error (max limit 50) | `YES` |
 | **Concurrent Race** | Parallel conversation creation | E11000 caught; returns existing record | `YES` |
+| **Long Words in UI** | String with 100+ consecutive chars | Wrapped cleanly via `break-words` | `YES` |
+| **Shift+Enter Key** | Pressing Shift+Enter in chat input | Creates newline; does not submit | `YES` |
 
 ---
 
@@ -161,13 +198,14 @@ PASS src/modules/chat/chat.controller.spec.ts
 | Bug ID | Description | Root Cause | Resolution | Retest Status |
 | :--- | :--- | :--- | :--- | :--- |
 | `BUG-INDEX-01` | Mongoose warning: duplicate index on `requestId`, `customerId`, `providerId`, `conversationId`, `senderId` | Declaring both `@Prop({ index: true })` and `Schema.index()` | Removed `index: true` inside `@Prop`, retained explicit index definitions at schema bottom | `VERIFIED FIXED` |
+| `BUG-UI-01` | Unhandled error rejection on message send failure | `handleSendMessage` re-threw caught error | Set error state for banner display without re-throwing | `VERIFIED FIXED` |
 
 ---
 
 ## 7. SQA Sign-Off & Recommendation
 
-- [x] **100% Test Pass Rate Achieved (256/256 tests passing across monorepo)**
+- [x] **100% Test Pass Rate Achieved (265/265 tests passing across monorepo)**
 - [x] **Zero Unresolved Defects**
-- [x] **Feature Ready for Frontend Integration (`FEAT-005-FE-chat.md`) and Real-Time Gateway (`FEAT-005-INT-chat-realtime.md`)**
+- [x] **Feature Ready for Real-Time Gateway & Room Auth Integration (`FEAT-005-INT-chat-realtime.md`)**
 
 **Final SQA Verdict:** **APPROVED (PASSED 100%)**

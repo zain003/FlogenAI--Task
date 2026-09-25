@@ -358,9 +358,7 @@ export default function RequestDetailPage() {
             type="button"
             data-testid="open-chat-button"
             onClick={() => {
-              // Prepares interaction with FEAT-005 chat module
-              const el = document.getElementById('chat-widget-root');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
+              router.push(`/chat/${id}`);
             }}
             className="inline-flex items-center space-x-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >

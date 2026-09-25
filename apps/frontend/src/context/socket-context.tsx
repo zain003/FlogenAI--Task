@@ -22,6 +22,7 @@ export interface ServerToClientEvents {
   'offer:created': (payload: { offer: any; requestTitle: string }) => void;
   'offer:accepted': (payload: { offer: any; requestId: string }) => void;
   'request:closed': (payload: { requestId: string }) => void;
+  'message:new': (payload: { message: any }) => void;
 }
 
 export interface SocketContextValue {
