@@ -47,8 +47,8 @@ export function CreateRequestForm({ onRequestCreated, className = '' }: CreateRe
     const parsedBudget = parseFloat(budget);
     if (!budget || budget.trim() === '') {
       errors.budget = 'Budget is required';
-    } else if (isNaN(parsedBudget) || parsedBudget <= 0) {
-      errors.budget = 'Budget must be a positive number greater than 0';
+    } else if (isNaN(parsedBudget) || parsedBudget < 1) {
+      errors.budget = 'Budget must be at least $1.00';
     }
 
     setFieldErrors(errors);
@@ -217,7 +217,7 @@ export function CreateRequestForm({ onRequestCreated, className = '' }: CreateRe
               name="budget"
               type="number"
               step="0.01"
-              min="0.01"
+              min="1.00"
               data-testid="request-budget-input"
               value={budget}
               onChange={(e) => {

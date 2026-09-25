@@ -67,7 +67,7 @@ describe('FEAT-002-FE: Service Requests UI & Feeds', () => {
   });
 
   // Test 2: should validate budget is a positive number before submitting
-  it('should validate budget is a positive number before submitting', async () => {
+  it('should validate budget is at least $1.00 before submitting', async () => {
     const user = userEvent.setup();
     const createSpy = vi.spyOn(apiClient.requests, 'create');
 
@@ -82,7 +82,7 @@ describe('FEAT-002-FE: Service Requests UI & Feeds', () => {
 
     expect(createSpy).not.toHaveBeenCalled();
     let budgetError = await screen.findByTestId('budget-error');
-    expect(budgetError).toHaveTextContent(/greater than 0/i);
+    expect(budgetError).toHaveTextContent(/at least \$1\.00/i);
 
     // 2. Submit with negative budget
     await user.clear(screen.getByLabelText(/budget/i));
@@ -91,7 +91,16 @@ describe('FEAT-002-FE: Service Requests UI & Feeds', () => {
 
     expect(createSpy).not.toHaveBeenCalled();
     budgetError = await screen.findByTestId('budget-error');
-    expect(budgetError).toHaveTextContent(/greater than 0/i);
+    expect(budgetError).toHaveTextContent(/at least \$1\.00/i);
+
+    // 3. Submit with sub-dollar budget (ISSUE-006)
+    await user.clear(screen.getByLabelText(/budget/i));
+    await user.type(screen.getByLabelText(/budget/i), '0.75');
+    await user.click(screen.getByTestId('create-request-submit-button'));
+
+    expect(createSpy).not.toHaveBeenCalled();
+    budgetError = await screen.findByTestId('budget-error');
+    expect(budgetError).toHaveTextContent(/at least \$1\.00/i);
   });
 
   // Test 3: should render list of open requests with title and budget formatted as USD

@@ -221,6 +221,22 @@ describe('RequestsController (API Layer Contract Tests)', () => {
       expect(whitespaceDescResponse.body.errors).toBeDefined();
       expect(mockRequestsService.create).not.toHaveBeenCalled();
     });
+
+    it('should reject request creation with sub-dollar fractional budget (< 1) with HTTP 400 (ISSUE-006)', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/requests')
+        .set('Authorization', 'Bearer customer-token')
+        .send({
+          title: 'Consultation Call',
+          description: 'Valid description with sufficient length.',
+          budget: 0.75,
+        })
+        .expect(400);
+
+      expect(response.body.statusCode).toBe(400);
+      expect(response.body.errors).toContain('budget must be at least 1');
+      expect(mockRequestsService.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /api/requests', () => {

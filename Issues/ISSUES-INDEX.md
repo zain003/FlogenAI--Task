@@ -8,7 +8,7 @@ This index summarizes all findings identified during the QA audit executed from 
 
 | Total Issues | Critical | High | Medium | Low | Open | Verified Fixed |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **7** | **0** | **2** | **3** | **2** | **2** | **5** |
+| **7** | **0** | **2** | **3** | **2** | **1** | **6** |
 
 - **Critical Invariants Verified Safe:**
   - Distributed Concurrency: 10 parallel acceptance race conditions verified with 0 double-acceptances (Tier 1 Redis mutex + Tier 2 MongoDB atomic mutation).
@@ -43,7 +43,7 @@ This index summarizes all findings identified during the QA audit executed from 
 
 | Issue ID | Title | Category | Flow / Location | Status | File Link |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ISSUE-006** | Discrepancy Between Frontend and Backend Minimum Budget Threshold | Forms / Consistency | `CreateRequestForm` vs `CreateRequestDto` | Open | [`ISSUE-006-fractional-budget-validation-discrepancy.md`](./ISSUE-006-fractional-budget-validation-discrepancy.md) |
+| **ISSUE-006** | Discrepancy Between Frontend and Backend Minimum Budget Threshold | Forms / Consistency | `CreateRequestForm` vs `CreateRequestDto` | Verified Fixed | [`ISSUE-006-fractional-budget-validation-discrepancy.md`](./ISSUE-006-fractional-budget-validation-discrepancy.md) |
 | **ISSUE-007** | Silent Session Eviction Without User Notification on Expired JWT | Auth / Usability | `AuthProvider` (`initializeAuth`) | Open | [`ISSUE-007-silent-expired-session-eviction.md`](./ISSUE-007-silent-expired-session-eviction.md) |
 
 ---

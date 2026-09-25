@@ -46,14 +46,20 @@ Forms / Validation Consistency
 - **Out of Scope:** Schema currency representation.
 
 ## Acceptance Criteria
-- [ ] Client form disallows entering values less than $1.00 before submission.
-- [ ] Backend error message accurately specifies that budget must be at least $1.00.
+- [x] Client form disallows entering values less than $1.00 before submission.
+- [x] Backend error message accurately specifies that budget must be at least $1.00.
 
 ## Related Feature/Ticket ID
 `FEAT-002-BE`, `FEAT-002-FE`
 
 ## Status
-Open
+Verified Fixed
+
+## Resolution Details
+- Updated `apps/backend/src/modules/requests/dto/create-request.dto.ts` `@Min(1, { message: 'budget must be at least 1' })` ensuring accurate rejection messages for sub-dollar values.
+- Updated `apps/frontend/src/components/requests/create-request-form.tsx` client-side validation check (`parsedBudget < 1` displaying `'Budget must be at least $1.00'`) and input element attribute `min="1.00"`.
+- Added test in `apps/backend/src/modules/requests/requests.controller.spec.ts` asserting HTTP 400 rejection and `'budget must be at least 1'` message for sub-dollar values like `0.75`.
+- Updated test in `apps/frontend/src/tests/requests.spec.tsx` asserting client-side rejection of sub-dollar budget `0.75` with `'Budget must be at least $1.00'`.
 
 ## Notes
-Identified during form boundary input analysis ($0.01 to $0.99 range).
+Identified during form boundary input analysis ($0.01 to $0.99 range). Verified fixed with 100% test pass rate.

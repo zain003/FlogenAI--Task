@@ -19,6 +19,6 @@ export class CreateRequestDto {
   description!: string;
 
   @IsNumber({}, { message: 'budget must be a number' })
-  @Min(1, { message: 'budget must be greater than 0' })
+  @Min(1, { message: 'budget must be at least 1' })
   budget!: number;
 }
