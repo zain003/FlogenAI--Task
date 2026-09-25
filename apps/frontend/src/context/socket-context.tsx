@@ -58,7 +58,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3001';
+    const wsUrl =
+      process.env.NEXT_PUBLIC_SOCKET_URL ||
+      process.env.NEXT_PUBLIC_WS_URL ||
+      'http://localhost:3001';
 
     const socketInstance: Socket = io(wsUrl, {
       auth: { token },

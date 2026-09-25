@@ -38,15 +38,29 @@ Infrastructure / Configuration / Real-Time
 - **Out of Scope:** Nginx configuration changes.
 
 ## Acceptance Criteria
-- [ ] `SocketProvider` prioritizes `NEXT_PUBLIC_SOCKET_URL`.
-- [ ] Connects cleanly to Nginx load balancer port 8080 in multi-instance Docker topology.
-- [ ] Vitest component tests pass without regressions.
+- [x] `SocketProvider` prioritizes `NEXT_PUBLIC_SOCKET_URL`.
+- [x] Connects cleanly to Nginx load balancer port 8080 in multi-instance Docker topology.
+- [x] Vitest component tests pass without regressions.
 
 ## Related Feature/Ticket ID
 `FEAT-006-INT`, `000-infra-contracts.md`
 
 ## Status
-Open
+**Verified Fixed** (2026-09-26)
+
+## Resolution Details
+1. **SocketProvider Environment Resolution (`apps/frontend/src/context/socket-context.tsx`):**
+   - Updated `wsUrl` resolution to inspect `process.env.NEXT_PUBLIC_SOCKET_URL` first per `000-infra-contracts.md` and `docker-compose.yml`, falling back to `process.env.NEXT_PUBLIC_WS_URL`, and defaulting to `'http://localhost:3001'` for local development.
+2. **Dedicated Test Suite (`apps/frontend/src/tests/socket-context.spec.tsx`):**
+   - Created comprehensive tests validating:
+     - Prioritization of `NEXT_PUBLIC_SOCKET_URL` (e.g., `http://localhost:8080`).
+     - Fallback to `NEXT_PUBLIC_WS_URL` when `NEXT_PUBLIC_SOCKET_URL` is omitted.
+     - Default to `http://localhost:3001` when neither environment variable is provided.
+     - Prevention of unauthenticated connection attempts.
+3. **Verification:**
+   - 77/77 frontend UI tests pass across 14 test files.
+   - Frontend TypeScript typechecking passed with 0 errors.
+   - E2E integration test suite passed 100%.
 
 ## Notes
 Discovered during Phase 2 static contract auditing against `000-infra-contracts.md`.

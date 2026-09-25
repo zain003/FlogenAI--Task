@@ -8,7 +8,7 @@ This index summarizes all findings identified during the QA audit executed from 
 
 | Total Issues | Critical | High | Medium | Low | Open | Verified Fixed |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **10** | **0** | **3** | **4** | **3** | **1** | **9** |
+| **10** | **0** | **3** | **4** | **3** | **0** | **10** |
 
 - **Critical Invariants Verified Safe:**
   - **Distributed Concurrency:** 10 parallel acceptance race conditions verified with 0 double-acceptances (Tier 1 Redis mutex + Tier 2 MongoDB atomic mutation).
@@ -37,7 +37,7 @@ This index summarizes all findings identified during the QA audit executed from 
 | **ISSUE-003** | Missing Strict Rate Limiting Throttle on User Registration Endpoint | Security / Rate Limiting | `POST /api/auth/register` | Verified Fixed | [`ISSUE-003-missing-rate-limit-auth-register.md`](./ISSUE-003-missing-rate-limit-auth-register.md) |
 | **ISSUE-004** | Navigation Bar Hides Dashboard Links on Mobile Viewports Without Mobile Menu | Navigation / Usability | `NavigationBar` (< 640px) | Verified Fixed | [`ISSUE-004-mobile-navigation-links-hidden.md`](./ISSUE-004-mobile-navigation-links-hidden.md) |
 | **ISSUE-005** | Absence of Client-Side Route Protection and Role Redirect on Dashboard Routes | Auth / Navigation | `/customer/requests`, `/provider/browse` | Verified Fixed | [`ISSUE-005-missing-client-route-protection.md`](./ISSUE-005-missing-client-route-protection.md) |
-| **ISSUE-010** | Inconsistent WebSocket Environment Variable Resolution in Socket Context | Infrastructure / Real-Time | `SocketProvider` (`socket-context.tsx`) | **Open** | [`ISSUE-010-inconsistent-socket-url-env-resolution.md`](./ISSUE-010-inconsistent-socket-url-env-resolution.md) |
+| **ISSUE-010** | Inconsistent WebSocket Environment Variable Resolution in Socket Context | Infrastructure / Real-Time | `SocketProvider` (`socket-context.tsx`) | Verified Fixed | [`ISSUE-010-inconsistent-socket-url-env-resolution.md`](./ISSUE-010-inconsistent-socket-url-env-resolution.md) |
 
 ---
 
@@ -51,11 +51,9 @@ This index summarizes all findings identified during the QA audit executed from 
 
 ---
 
-## Recommended Action Plan for Newly Identified Issues
+## Remediation Summary
 
-1. **Sprint Focus 1 (High Priority):**
-   - **Fix ISSUE-008:** Update `ChatWindow.handleSendMessage` in `apps/frontend/src/components/chat/chat-window.tsx` to transmit outgoing chat messages using `socket.emit('message:send', { conversationId, content })` when connected, or trigger `chatGateway.server.to(room).emit('message:new')` from `POST /api/conversations/:id/messages`. This restores real-time bidirectional delivery without page reload.
-2. **Sprint Focus 2 (Medium Priority):**
-   - **Fix ISSUE-010:** Update `apps/frontend/src/context/socket-context.tsx` to inspect `process.env.NEXT_PUBLIC_SOCKET_URL` before falling back to `process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080'`. This ensures multi-instance Docker traffic passes through the Nginx reverse proxy.
-3. **Sprint Focus 3 (Low Priority):**
-   - **Fix ISSUE-009:** Update `SubmitOfferDialog` in `apps/frontend/src/components/offers/submit-offer-dialog.tsx` to validate `parsedPrice < 1` displaying `'Please enter a valid price of at least $1.00'` and add `min="1.00"` to the input element, mirroring `ISSUE-006`.
+All 10 identified issues across High, Medium, and Low severity classifications have been resolved, comprehensively tested, and verified:
+1. **ISSUE-008 (Verified Fixed):** Injected `ChatGateway` in `ChatController` to broadcast `message:new` over Redis Pub/Sub adapter to all connected conversation peers upon HTTP message creation.
+2. **ISSUE-009 (Verified Fixed):** Aligned `SubmitOfferDialog` with backend `@Min(1)` constraint (`parsedPrice < 1`, `min="1.00"`, clear error message).
+3. **ISSUE-010 (Verified Fixed):** Updated `SocketProvider` to prioritize `NEXT_PUBLIC_SOCKET_URL` per `000-infra-contracts.md` and `docker-compose.yml`, with backward-compatible fallbacks and 4 dedicated unit tests.
