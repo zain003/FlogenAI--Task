@@ -192,6 +192,35 @@ describe('RequestsController (API Layer Contract Tests)', () => {
       expect(response.body.statusCode).toBe(400);
       expect(mockRequestsService.create).not.toHaveBeenCalled();
     });
+
+    it('should reject request creation with whitespace-only title or description with HTTP 400 (ISSUE-001)', async () => {
+      const whitespaceTitleResponse = await request(app.getHttpServer())
+        .post('/api/requests')
+        .set('Authorization', 'Bearer customer-token')
+        .send({
+          title: '   ',
+          description: 'Valid description with sufficient length.',
+          budget: 100,
+        })
+        .expect(400);
+
+      expect(whitespaceTitleResponse.body.statusCode).toBe(400);
+      expect(whitespaceTitleResponse.body.errors).toBeDefined();
+
+      const whitespaceDescResponse = await request(app.getHttpServer())
+        .post('/api/requests')
+        .set('Authorization', 'Bearer customer-token')
+        .send({
+          title: 'Valid Service Title',
+          description: '          ',
+          budget: 100,
+        })
+        .expect(400);
+
+      expect(whitespaceDescResponse.body.statusCode).toBe(400);
+      expect(whitespaceDescResponse.body.errors).toBeDefined();
+      expect(mockRequestsService.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /api/requests', () => {

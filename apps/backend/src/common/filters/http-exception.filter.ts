@@ -51,6 +51,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if ((exception as any).code === 11000) {
         status = HttpStatus.CONFLICT;
         message = 'A resource with this identifier already exists';
+      } else if (exception.name === 'ValidationError') {
+        status = HttpStatus.BAD_REQUEST;
+        message = 'Validation failed';
+        const mongooseErrors = (exception as any).errors;
+        if (mongooseErrors && typeof mongooseErrors === 'object') {
+          errors = Object.values(mongooseErrors).map(
+            (err: any) => err.message || String(err),
+          );
+        }
       }
     }
 
