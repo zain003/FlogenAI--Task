@@ -14,7 +14,8 @@
     "typecheck:backend": "npm run typecheck --workspace=apps/backend",
     "test:ui": "npm run test:ui --workspace=apps/frontend",
     "build:frontend": "npm run build --workspace=apps/frontend",
-    "typecheck:frontend": "npm run typecheck --workspace=apps/frontend"
+    "typecheck:frontend": "npm run typecheck --workspace=apps/frontend",
+    "verify:cluster": "ts-node scripts/verify-cluster.ts"
   },
   "keywords": [],
   "author": "",

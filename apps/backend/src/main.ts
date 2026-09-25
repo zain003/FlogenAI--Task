@@ -8,6 +8,9 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
+  // Gracefully disconnect Redis and MongoDB on SIGTERM/SIGINT
+  app.enableShutdownHooks();
+
   app.enableCors({
     origin: '*',
     credentials: true,
@@ -29,7 +32,7 @@ async function bootstrap() {
   app.useWebSocketAdapter(redisIoAdapter);
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   logger.log(`NestJS Service Marketplace Backend running on port ${port}`);
 }

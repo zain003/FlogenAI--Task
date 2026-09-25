@@ -11,8 +11,10 @@ import { SocketModule } from './modules/socket/socket.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AppController } from './app.controller';
 
 @Module({
+  controllers: [AppController],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,

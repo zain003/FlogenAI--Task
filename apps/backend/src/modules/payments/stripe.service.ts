@@ -23,7 +23,8 @@ export class StripeService {
       this.logger.warn('STRIPE_SECRET_KEY is not defined in environment variables');
     }
 
-    this.stripe = new Stripe(apiKey);
+    const StripeConstructor = (Stripe as any)?.default || Stripe;
+    this.stripe = new StripeConstructor(apiKey);
   }
 
   /**

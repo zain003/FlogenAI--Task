@@ -5,4 +5,4 @@ Format: `[FILE-ID] — old signature — new signature — reason`
 
 | File ID | Old Signature | New Signature | Reason | Date |
 | :--- | :--- | :--- | :--- | :--- |
-| *None yet* | - | - | - | - |
+| **FEAT-006** | N/A | `GET /api/health` -> `{ status: 'ok', uptime: number, timestamp: string }` | Added zero-dependency health probe for Docker container healthchecks and Nginx load balancer | 2026-09-25 |

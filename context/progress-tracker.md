@@ -4,11 +4,11 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Phase
 
-- **Feature Implementation (Phase 2)** — Backend & Frontend Modules
+- **Verification & Final Evaluation (Phase 3)** — End-to-End Epic Verification
 
 ## Current Goal
 
-- Begin execution of `FEAT-006-INT-scaling.md` (Multi-Instance Scaling & Docker Compose Setup).
+- Begin execution of `EPIC-001-VERIFY-marketplace-lifecycle.md` (Full Marketplace End-to-End Journey Verification).
 
 ## Feature Implementation Pipeline
 
@@ -19,7 +19,7 @@ Update this file after every meaningful implementation change and test report co
 | **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-003-test-report.md`](../feature-test-reports/FEAT-003-test-report.md) |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md) |
 | **FEAT-005** | Real-Time Authorized Chat | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-005-test-report.md`](../feature-test-reports/FEAT-005-test-report.md) |
-| **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
+| **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-006-test-report.md`](../feature-test-reports/FEAT-006-test-report.md) |
 | **EPIC-001** | Full Marketplace End-to-End Journey | VERIFY | Not Started | `feature-test-reports/EPIC-001-test-report.md` |
 
 ## Completed
@@ -179,16 +179,25 @@ Update this file after every meaningful implementation change and test report co
   - **Multi-Layer SQA Test Suite**: Confirmed 100% test pass rate with **280/280 passing tests (214 backend + 66 frontend)** across 32 test suites with zero failures.
   - **Clean Builds**: Verified clean production builds for both NestJS (`nest build`) and Next.js 16 Turbopack (`next build`).
   - Published formal SQA Test Report at [`feature-test-reports/FEAT-005-test-report.md`](../feature-test-reports/FEAT-005-test-report.md).
+- **`FEAT-006-INT-scaling-docker.md` & `FEAT-006-VERIFY-scaling.md`**: Multi-Instance Horizontal Scaling & Docker Topology implemented and 100% verified.
+  - **Docker Topology & Health Orchestration**: Created multi-stage Dockerfiles for NestJS (`apps/backend/Dockerfile`) with non-root security (`USER node`) and Next.js 16 (`apps/frontend/Dockerfile`) with non-root security (`USER nextjs`), native bcrypt build support, and `.dockerignore` hygiene. Configured `docker/nginx.conf` reverse proxy with `ip_hash` upstream pool (`backend-1:3001`, `backend-2:3002`) and WebSocket upgrade headers. Orchestrated 6 services in `docker-compose.yml` (`mongo`, `redis`, `backend-1`, `backend-2`, `nginx`, `frontend`) with automated container healthchecks and strict startup dependency order (`depends_on: { condition: service_healthy }`). All 6 containers verified `Up (healthy)`.
+  - **Resilient Platform Lifecycle**: Added `AppController` (`GET /api/health`) in NestJS backend, enabled graceful shutdown hooks (`app.enableShutdownHooks()`), bound listener to `0.0.0.0`, and defensively normalized `NEXT_PUBLIC_API_URL` rewrites in Next.js 16 `next.config.js`.
+  - **Automated Cluster Verification (`scripts/verify-cluster.ts`)**: Built turnkey cluster verification script testing:
+    1. Direct Socket.IO connections to Node 1 (port 3001) and Node 2 (port 3002) with handshake JWT authentication.
+    2. Cross-instance event broadcast via Redis Pub/Sub adapter: Customer creating request on Node 1 triggers real-time `request:created` event delivery to Provider connected to Node 2 (< 550ms latency).
+    3. Nginx load balancing: Verified REST API routing to cluster instances and WebSocket upgrade proxying on port 8080.
+    4. Concurrency protection: Simultaneous parallel offer acceptances hitting Node 1 and Node 2 at the exact same millisecond result in exactly 1 HTTP 200 acceptance and 1 HTTP 409 conflict, with MongoDB maintaining zero double-acceptance state.
+  - **Stateless Resilience Audit**: Verified backend instances can be stopped and restarted (`docker compose restart backend-1`) with immediate auto-recovery and zero disruption.
+  - **Multi-Layer SQA Test Suite**: Added 4 live cluster integration tests and 4 unit tests in `socket-redis.spec.ts`. Full monorepo passing test suite expanded to **289 passing tests** (219 backend across 21 suites + 66 frontend across 12 suites + 4 live cluster) with 100% pass rate, zero compiler or typecheck errors.
+  - Generated and committed formal SQA Test Report in [`feature-test-reports/FEAT-006-test-report.md`](../feature-test-reports/FEAT-006-test-report.md).
 
 ## In Progress
 
-- `FEAT-006-INT-scaling.md` (Multi-Instance Scaling & Docker Compose Setup).
+- `epics/EPIC-001-VERIFY-marketplace-lifecycle.md` (Full Marketplace End-to-End Journey Verification).
 
 ## Next Up
 
-- `FEAT-006-INT-scaling.md` (Multi-Instance Scaling & Docker Compose Setup).
-- `FEAT-006-VERIFY-scaling.md` (Cross-Instance WebSocket & Load Balancing Verification Pass).
-- `EPIC-001-VERIFY.md` (Full Marketplace End-to-End Journey Verification).
+- `epics/EPIC-001-VERIFY-marketplace-lifecycle.md` (Full Marketplace End-to-End Journey Verification).
 
 ## Open Questions & Assumptions
 

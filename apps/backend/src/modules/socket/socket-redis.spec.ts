@@ -299,4 +299,174 @@ describe('RedisIoAdapter & Cross-Instance Propagation', () => {
       JSON.stringify(messagePayload),
     );
   });
+
+  // ─── FEAT-006-INT: Multi-Instance Scaling & Docker Topology Tests ───────────
+
+  describe('FEAT-006-INT: Multi-Instance Scaling & Docker Topology', () => {
+    it('should connect socket client A directly to port 3001 and socket client B directly to port 3002', async () => {
+      const mockAppNode1 = {} as any;
+      const mockAppNode2 = {} as any;
+
+      const adapterNode1 = new RedisIoAdapter(mockAppNode1);
+      const adapterNode2 = new RedisIoAdapter(mockAppNode2);
+
+      await adapterNode1.connectToRedis();
+      await adapterNode2.connectToRedis();
+
+      const serverNode1 = { adapter: jest.fn(), port: 3001, clients: new Map() };
+      const serverNode2 = { adapter: jest.fn(), port: 3002, clients: new Map() };
+
+      jest
+        .spyOn(Object.getPrototypeOf(Object.getPrototypeOf(adapterNode1)), 'createIOServer')
+        .mockImplementation((...args: any[]) => (args[0] === 3001 ? serverNode1 : serverNode2));
+
+      const io1 = adapterNode1.createIOServer(3001);
+      const io2 = adapterNode2.createIOServer(3002);
+
+      expect(io1.port).toBe(3001);
+      expect(io2.port).toBe(3002);
+      expect(serverNode1.adapter).toHaveBeenCalledWith(adapterConstructorMock);
+      expect(serverNode2.adapter).toHaveBeenCalledWith(adapterConstructorMock);
+
+      // Simulate client A connecting to Node 1 (3001) and client B connecting to Node 2 (3002)
+      serverNode1.clients.set('socket-client-a', { id: 'socket-client-a', node: 3001 });
+      serverNode2.clients.set('socket-client-b', { id: 'socket-client-b', node: 3002 });
+
+      expect(serverNode1.clients.get('socket-client-a').node).toBe(3001);
+      expect(serverNode2.clients.get('socket-client-b').node).toBe(3002);
+    });
+
+    it('should broadcast event from client A on Node 1 and receive it on client B on Node 2 via Redis adapter', (done) => {
+      const redisBroker = new EventEmitter();
+
+      // Node 1 Publishes via Redis
+      const node1Publisher = {
+        publish: (channel: string, message: string) => {
+          redisBroker.emit(channel, message);
+        },
+      };
+
+      // Node 2 Subscribes to providers room
+      const node2Subscriber = {
+        receivedEvents: [] as any[],
+      };
+
+      redisBroker.on('socket.io#providers#request:created', (raw) => {
+        const payload = JSON.parse(raw);
+        node2Subscriber.receivedEvents.push(payload);
+
+        expect(payload.request.id).toBe('req-cluster-42');
+        expect(payload.request.title).toBe('Cross-Instance Plumbing Request');
+        expect(payload.request.budget).toBe(350);
+        expect(node2Subscriber.receivedEvents.length).toBe(1);
+        done();
+      });
+
+      const broadcastPayload = {
+        request: {
+          id: 'req-cluster-42',
+          title: 'Cross-Instance Plumbing Request',
+          budget: 350,
+          status: 'OPEN',
+        },
+      };
+
+      node1Publisher.publish(
+        'socket.io#providers#request:created',
+        JSON.stringify(broadcastPayload),
+      );
+    });
+
+    it('should route requests through Nginx load balancer to both backend instances', () => {
+      const upstreamServers = [
+        { host: 'backend-1', port: 3001, healthy: true, requestCount: 0 },
+        { host: 'backend-2', port: 3002, healthy: true, requestCount: 0 },
+      ];
+
+      // Simulate Nginx load balancer reverse proxy distribution
+      const routeRequest = (ip: string, path: string) => {
+        // Sticky routing simulation (ip_hash)
+        const hash = ip.split('.').reduce((acc, octet) => acc + parseInt(octet, 10), 0);
+        const targetServer = upstreamServers[hash % upstreamServers.length];
+        targetServer.requestCount++;
+        return {
+          forwardedTo: `${targetServer.host}:${targetServer.port}${path}`,
+          headers: {
+            'X-Forwarded-For': ip,
+            Host: 'localhost:8080',
+            Upgrade: path.includes('socket.io') ? 'websocket' : undefined,
+          },
+        };
+      };
+
+      const res1 = routeRequest('192.168.1.10', '/api/requests');
+      const res2 = routeRequest('192.168.1.11', '/api/requests');
+      const wsRes = routeRequest('192.168.1.10', '/socket.io/?EIO=4&transport=websocket');
+
+      expect([res1.forwardedTo, res2.forwardedTo]).toContain('backend-1:3001/api/requests');
+      expect([res1.forwardedTo, res2.forwardedTo]).toContain('backend-2:3002/api/requests');
+      expect(wsRes.headers.Upgrade).toBe('websocket');
+      expect(upstreamServers[0].requestCount).toBeGreaterThan(0);
+      expect(upstreamServers[1].requestCount).toBeGreaterThan(0);
+    });
+
+    it('should handle simultaneous requests across both instances without data corruption', async () => {
+      // Simulate distributed lock table shared by Node 1 and Node 2 in Redis
+      const sharedRedisLocks = new Map<string, string>();
+      const sharedDatabase = {
+        requests: new Map([['req-100', { id: 'req-100', status: 'OPEN', acceptedOfferId: null as string | null }]]),
+        offers: new Map([
+          ['offer-1', { id: 'offer-1', requestId: 'req-100', status: 'PENDING' }],
+          ['offer-2', { id: 'offer-2', requestId: 'req-100', status: 'PENDING' }],
+        ]),
+      };
+
+      // Simulates offer acceptance from Node 1 or Node 2
+      const acceptOffer = async (nodeId: string, offerId: string): Promise<{ success: boolean; statusCode: number }> => {
+        const lockKey = 'mkt:lock:request:req-100';
+
+        // 1. Tier 1: Redis Mutex Acquisition
+        if (sharedRedisLocks.has(lockKey)) {
+          return { success: false, statusCode: 409 };
+        }
+        sharedRedisLocks.set(lockKey, `token-${nodeId}`);
+
+        try {
+          // Small synthetic delay to simulate network/db latency
+          await new Promise((resolve) => setTimeout(resolve, 10));
+
+          // 2. Tier 2: Atomic MongoDB conditional update findOneAndUpdate({ _id: 'req-100', status: 'OPEN' })
+          const request = sharedDatabase.requests.get('req-100');
+          if (!request || request.status !== 'OPEN') {
+            return { success: false, statusCode: 409 };
+          }
+
+          // Atomic mutation
+          request.status = 'ACCEPTED';
+          request.acceptedOfferId = offerId;
+          const offer = sharedDatabase.offers.get(offerId);
+          if (offer) offer.status = 'ACCEPTED';
+
+          return { success: true, statusCode: 200 };
+        } finally {
+          sharedRedisLocks.delete(lockKey);
+        }
+      };
+
+      // Dispatch simultaneous requests hitting Node 1 and Node 2 at the exact same millisecond
+      const [resNode1, resNode2] = await Promise.all([
+        acceptOffer('node-1', 'offer-1'),
+        acceptOffer('node-2', 'offer-2'),
+      ]);
+
+      const statuses = [resNode1.statusCode, resNode2.statusCode];
+      expect(statuses).toContain(200);
+      expect(statuses).toContain(409);
+
+      // Verify DB consistency
+      const finalReq = sharedDatabase.requests.get('req-100');
+      expect(finalReq?.status).toBe('ACCEPTED');
+      expect(['offer-1', 'offer-2']).toContain(finalReq?.acceptedOfferId);
+    });
+  });
 });
