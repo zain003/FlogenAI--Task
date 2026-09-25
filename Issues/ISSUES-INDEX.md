@@ -8,7 +8,7 @@ This index summarizes all findings identified during the QA audit executed from 
 
 | Total Issues | Critical | High | Medium | Low | Open | Verified Fixed |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **7** | **0** | **2** | **3** | **2** | **3** | **4** |
+| **7** | **0** | **2** | **3** | **2** | **2** | **5** |
 
 - **Critical Invariants Verified Safe:**
   - Distributed Concurrency: 10 parallel acceptance race conditions verified with 0 double-acceptances (Tier 1 Redis mutex + Tier 2 MongoDB atomic mutation).
@@ -35,7 +35,7 @@ This index summarizes all findings identified during the QA audit executed from 
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **ISSUE-003** | Missing Strict Rate Limiting Throttle on User Registration Endpoint | Security / Rate Limiting | `POST /api/auth/register` | Verified Fixed | [`ISSUE-003-missing-rate-limit-auth-register.md`](./ISSUE-003-missing-rate-limit-auth-register.md) |
 | **ISSUE-004** | Navigation Bar Hides Dashboard Links on Mobile Viewports Without Mobile Menu | Navigation / Usability | `NavigationBar` (< 640px) | Verified Fixed | [`ISSUE-004-mobile-navigation-links-hidden.md`](./ISSUE-004-mobile-navigation-links-hidden.md) |
-| **ISSUE-005** | Absence of Client-Side Route Protection and Role Redirect on Dashboard Routes | Auth / Navigation | `/customer/requests`, `/provider/browse` | Open | [`ISSUE-005-missing-client-route-protection.md`](./ISSUE-005-missing-client-route-protection.md) |
+| **ISSUE-005** | Absence of Client-Side Route Protection and Role Redirect on Dashboard Routes | Auth / Navigation | `/customer/requests`, `/provider/browse` | Verified Fixed | [`ISSUE-005-missing-client-route-protection.md`](./ISSUE-005-missing-client-route-protection.md) |
 
 ---
 

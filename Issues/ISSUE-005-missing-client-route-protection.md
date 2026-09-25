@@ -36,15 +36,26 @@ Auth / Navigation / Usability
 - **Out of Scope:** Server-side backend guards (which already correctly return 401/403).
 
 ## Acceptance Criteria
-- [ ] Direct unauthenticated visit to `/customer/requests` redirects to `/login`.
-- [ ] Direct unauthenticated visit to `/provider/browse` redirects to `/login`.
-- [ ] Provider visiting `/customer/requests` is redirected to `/provider/browse`.
+- [x] Direct unauthenticated visit to `/customer/requests` redirects to `/login`.
+- [x] Direct unauthenticated visit to `/provider/browse` redirects to `/login`.
+- [x] Provider visiting `/customer/requests` is redirected to `/provider/browse`.
+- [x] Customer visiting `/provider/browse` is redirected to `/customer/requests`.
 
 ## Related Feature/Ticket ID
 `FEAT-001-FE`, `FEAT-002-FE`
 
 ## Status
-Open
+Verified Fixed
+
+## Resolution Details
+- Integrated client-side route protection `useEffect` in both `CustomerRequestsPage` (`apps/frontend/src/app/customer/requests/page.tsx`) and `ProviderBrowsePage` (`apps/frontend/src/app/provider/browse/page.tsx`).
+- Protected backend API data fetching from firing when unauthenticated or during cross-role access.
+- Rendered non-blocking loading screen with animated spinner during session verification.
+- Enforced role boundaries:
+  - Unauthenticated visits redirect to `/login`.
+  - Providers visiting `/customer/requests` redirect to `/provider/browse`.
+  - Customers visiting `/provider/browse` redirect to `/customer/requests`.
+- Added automated integration tests in `apps/frontend/src/tests/route-guards.spec.tsx` verifying all 4 redirection cases (4/4 tests passed).
 
 ## Notes
-Observed during role-based boundary testing and unauthenticated direct navigation checks.
+Observed during role-based boundary testing and unauthenticated direct navigation checks. Verified fixed with 100% test pass rate.

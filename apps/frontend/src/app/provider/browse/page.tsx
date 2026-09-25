@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth, AuthContext } from '@/context/auth-context';
 import { RequestCard } from '@/components/requests/request-card';
 import { useSocket } from '@/context/socket-context';
 import {
@@ -20,15 +22,33 @@ import {
 } from 'lucide-react';
 
 export default function ProviderBrowsePage() {
+  const router = useRouter();
+  const authContext = useContext(AuthContext);
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { socket, isConnected } = useSocket();
   const [requests, setRequests] = useState<ServiceRequestEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newlyArrivedId, setNewlyArrivedId] = useState<string | null>(null);
 
+  // Client-side route protection
+  useEffect(() => {
+    if (!authContext || isAuthLoading) return;
+
+    if (!isAuthenticated) {
+      router.push('/login');
+    } else if (user?.role === 'customer') {
+      router.push('/customer/requests');
+    }
+  }, [authContext, isAuthLoading, isAuthenticated, user, router]);
+
   // ─── Initial fetch ────────────────────────────────────────────────────────
 
   const fetchOpenRequests = useCallback(async (): Promise<void> => {
+    if (authContext && (!isAuthenticated || user?.role !== 'provider')) {
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -44,11 +64,14 @@ export default function ProviderBrowsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [authContext, isAuthenticated, user]);
 
   useEffect(() => {
+    if (authContext && (isAuthLoading || !isAuthenticated || user?.role !== 'provider')) {
+      return;
+    }
     fetchOpenRequests();
-  }, [fetchOpenRequests]);
+  }, [authContext, isAuthLoading, isAuthenticated, user, fetchOpenRequests]);
 
   // ─── Real-time listener: request:created ─────────────────────────────────
   //
@@ -57,6 +80,7 @@ export default function ProviderBrowsePage() {
 
   useEffect(() => {
     if (!socket) return;
+    if (authContext && (!isAuthenticated || user?.role !== 'provider')) return;
 
     const handleRequestCreated = (payload: {
       request: ServiceRequestEntity;
@@ -135,6 +159,17 @@ export default function ProviderBrowsePage() {
   }, [socket, fetchOpenRequests]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
+
+  if (authContext && (isAuthLoading || !isAuthenticated || user?.role !== 'provider')) {
+    return (
+      <div data-testid="auth-loading-screen" className="flex min-h-[50vh] items-center justify-center">
+        <div className="flex flex-col items-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+          <p className="text-sm text-gray-400">Verifying provider access...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

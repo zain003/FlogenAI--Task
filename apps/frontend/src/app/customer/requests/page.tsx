@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/context/auth-context';
+import { useRouter } from 'next/navigation';
+import { useAuth, AuthContext } from '@/context/auth-context';
 import { CreateRequestForm } from '@/components/requests/create-request-form';
 import { RequestCard } from '@/components/requests/request-card';
 import {
@@ -20,12 +21,29 @@ import {
 } from 'lucide-react';
 
 export default function CustomerRequestsPage() {
+  const router = useRouter();
+  const authContext = useContext(AuthContext);
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [requests, setRequests] = useState<ServiceRequestEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Client-side route protection
+  useEffect(() => {
+    if (!authContext || isAuthLoading) return;
+
+    if (!isAuthenticated) {
+      router.push('/login');
+    } else if (user?.role === 'provider') {
+      router.push('/provider/browse');
+    }
+  }, [authContext, isAuthLoading, isAuthenticated, user, router]);
+
   const fetchMyRequests = useCallback(async () => {
+    if (authContext && (!isAuthenticated || user?.role !== 'customer')) {
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -41,15 +59,29 @@ export default function CustomerRequestsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [authContext, isAuthenticated, user]);
 
   useEffect(() => {
+    if (authContext && (isAuthLoading || !isAuthenticated || user?.role !== 'customer')) {
+      return;
+    }
     fetchMyRequests();
-  }, [fetchMyRequests]);
+  }, [authContext, isAuthLoading, isAuthenticated, user, fetchMyRequests]);
 
   const handleRequestCreated = (newRequest: ServiceRequestEntity) => {
     setRequests((prev) => [newRequest, ...prev]);
   };
+
+  if (authContext && (isAuthLoading || !isAuthenticated || user?.role !== 'customer')) {
+    return (
+      <div data-testid="auth-loading-screen" className="flex min-h-[50vh] items-center justify-center">
+        <div className="flex flex-col items-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+          <p className="text-sm text-gray-400">Verifying customer access...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
