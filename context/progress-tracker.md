@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-003-FE-offers.md` (Offers UI & Customer Acceptance Flow in Next.js 16).
+- Begin execution of `FEAT-003-INT-offers-realtime.md` (Real-Time Offer Events & Acceptance Broadcast).
 
 ## Feature Implementation Pipeline
 
@@ -16,7 +16,7 @@ Update this file after every meaningful implementation change and test report co
 | :--- | :--- | :--- | :--- | :--- |
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
-| **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Next), INT, VERIFY | In Progress | `feature-test-reports/FEAT-003-test-report.md` |
+| **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Next), VERIFY | In Progress | `feature-test-reports/FEAT-003-test-report.md` |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
 | **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
@@ -78,16 +78,25 @@ Update this file after every meaningful implementation change and test report co
     - 17 API contract tests in `offers.controller.spec.ts` (route guards, RBAC 403, unauthenticated 401, validation 400, conflict 409).
     - 3 Concurrency race condition tests in `offers-concurrency.spec.ts` (simultaneous 2-way and 5-way parallel requests hitting exact same millisecond with zero double-acceptances, and Tier 2 fallback defense test).
   - Monorepo test suite expanded to 135/135 passing tests (103 backend + 32 frontend) with 100% pass rate and zero compiler or linter errors.
+- **`FEAT-003-FE-offers.md`**: Offers UI & Customer Acceptance Flow implemented in Next.js 16.
+  - **SubmitOfferDialog Component**: Modal dialog with accessible focus management, ESC key closure, client-side validation for price (> 0) and message (5-1000 characters), error banner display, and loading states.
+  - **OfferCard Component**: Displays USD formatted price (`$XX.XX`), proposal message, provider identification, relative timestamp, and status badges (`PENDING` in amber, `ACCEPTED` in emerald, `REJECTED` in rose). Enforces RBAC visibility so "Accept Offer" button is rendered exclusively for customer owners of OPEN requests and completely hidden for providers.
+  - **OfferList Component**: Renders incoming proposals feed on `/requests/[id]`, provider "Submit Offer" action trigger, empty state placeholder, and customer acceptance handler. Features instant optimistic UI state transitions (winning offer -> `ACCEPTED`, peers -> `REJECTED`), double-click prevention (immediate disabled state on click), error banner handling (HTTP 409 conflict detection), and success payment prompt.
+  - **RequestDetailPage Integration**: Replaced static offers placeholder with live `OfferList` component, passing dynamic customer ownership flags and synchronizing request status upon offer acceptance.
+  - **ApiClient Extension**: Extended `ApiClient` with typed methods for `offers.create`, `offers.getByRequestId`, `offers.accept`, and `offers.getById` with full TypeScript interfaces.
+  - **AuthContext Safety**: Exported `AuthContext` and added resilient fallback in `useAuth` hook ensuring zero runtime exceptions when components are rendered in isolated test harnesses.
+  - **Fake DOM Test Suite**: Authored 9 comprehensive tests in `src/tests/offers.spec.tsx` covering provider submission, price and message validation, offer list rendering, customer acceptance mutations, peer rejection, provider button omission, and 409 conflict handling.
+  - Monorepo test suite expanded to 144/144 passing tests (103 backend + 41 frontend) with 100% pass rate, 0 compiler errors, and clean Next.js 16 Turbopack production build.
 
 ## In Progress
 
-- `FEAT-003-FE-offers.md` (Offers UI & Customer Acceptance Flow in Next.js 16).
+- `FEAT-003-INT-offers-realtime.md` (Real-Time Offer Events & Acceptance Broadcast).
 
 ## Next Up
 
-- `FEAT-003-FE-offers.md` (Offers UI & Customer Acceptance Flow in Next.js 16).
 - `FEAT-003-INT-offers-realtime.md` (Real-Time Offer Events & Acceptance Broadcast).
 - `FEAT-003-VERIFY-offers.md` (Offers SQA Verification Pass).
+- `FEAT-004-BE-payments.md` (Stripe PaymentIntent & Idempotent Webhook).
 
 ## Open Questions & Assumptions
 

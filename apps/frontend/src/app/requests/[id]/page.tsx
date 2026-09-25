@@ -11,6 +11,8 @@ import {
   formatRelativeDate,
 } from '@/lib/api-client';
 import { RequestStatusBadge } from '@/components/requests/request-card';
+import { OfferList } from '@/components/offers/offer-list';
+import { useAuth } from '@/context/auth-context';
 import {
   ArrowLeft,
   DollarSign,
@@ -28,11 +30,24 @@ import {
 export default function RequestDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const id = params?.id as string;
 
   const [request, setRequest] = useState<ServiceRequestEntity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleOfferAccepted = (acceptedOffer: any) => {
+    setRequest((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: 'ACCEPTED',
+            acceptedOfferId: acceptedOffer.id,
+          }
+        : null,
+    );
+  };
 
   const fetchRequestDetails = useCallback(async () => {
     if (!id) return;
@@ -171,33 +186,15 @@ export default function RequestDetailPage() {
         </div>
       </div>
 
-      {/* Offers Section Placeholder (Scope for FEAT-003-FE) */}
-      <div className="mt-8 rounded-xl border border-[#1f293d] bg-[#111827] p-6 shadow-xl sm:p-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600/20 text-indigo-400">
-              <MessageSquare className="h-4 w-4" />
-            </div>
-            <h2 className="text-lg font-semibold text-white">Incoming Offers & Proposals</h2>
-          </div>
-          <span className="rounded-full border border-gray-700 bg-gray-800/80 px-2.5 py-0.5 text-xs text-gray-400">
-            Offers Room
-          </span>
-        </div>
-
-        <div className="mt-6 flex flex-col items-center justify-center rounded-lg border border-dashed border-[#1f293d] bg-[#090d16]/50 p-10 text-center">
-          <Sparkles className="h-8 w-8 text-indigo-400/80" />
-          <h3 className="mt-3 text-sm font-semibold text-gray-200">
-            Offer Management & Bidding
-          </h3>
-          <p className="mt-1 max-w-md text-xs text-gray-400">
-            Verified service providers can submit price proposals and timelines. Once offers are submitted, customers can review terms and accept with race-condition protection.
-          </p>
-          <div className="mt-4 text-xs font-mono text-gray-500">
-            Status: {request.status === 'OPEN' ? 'Accepting competitive offers' : `Request is ${request.status}`}
-          </div>
-        </div>
-      </div>
+      {/* Offers Stream & Management */}
+      <OfferList
+        requestId={request.id}
+        requestTitle={request.title}
+        requestBudget={request.budget}
+        requestStatus={request.status}
+        isCustomerOwner={Boolean(user && user.id === request.customerId)}
+        onOfferAccepted={handleOfferAccepted}
+      />
     </div>
   );
 }

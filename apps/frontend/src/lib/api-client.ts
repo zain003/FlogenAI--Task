@@ -67,6 +67,30 @@ export interface GetRequestsQuery {
   status?: RequestStatus;
 }
 
+export type OfferStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
+export interface OfferEntity {
+  id: string;
+  requestId: string;
+  providerId: string;
+  price: number;
+  message: string;
+  status: OfferStatus;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateOfferDto {
+  price: number;
+  message: string;
+}
+
+export interface AcceptOfferResponse {
+  success: boolean;
+  offer: OfferEntity;
+  paymentPending: boolean;
+}
+
 export function formatCurrency(amount: number): string {
   if (typeof amount !== 'number' || isNaN(amount)) return '$0.00';
   return new Intl.NumberFormat('en-US', {
@@ -252,6 +276,44 @@ class ApiClient {
 
     getById: (id: string): Promise<ServiceRequestEntity> => {
       return this.request<ServiceRequestEntity>(`/api/requests/${id}`, {
+        method: 'GET',
+      });
+    },
+  };
+
+  public offers = {
+    create: (requestId: string, dto: CreateOfferDto): Promise<OfferEntity> => {
+      return this.request<OfferEntity>(`/api/requests/${requestId}/offers`, {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      });
+    },
+
+    getByRequestId: (
+      requestId: string,
+      params?: { page?: number; limit?: number; status?: OfferStatus },
+    ): Promise<PaginatedResponse<OfferEntity>> => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.status) searchParams.set('status', params.status);
+      const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+      return this.request<PaginatedResponse<OfferEntity>>(
+        `/api/requests/${requestId}/offers${query}`,
+        {
+          method: 'GET',
+        },
+      );
+    },
+
+    accept: (offerId: string): Promise<AcceptOfferResponse> => {
+      return this.request<AcceptOfferResponse>(`/api/offers/${offerId}/accept`, {
+        method: 'POST',
+      });
+    },
+
+    getById: (offerId: string): Promise<OfferEntity> => {
+      return this.request<OfferEntity>(`/api/offers/${offerId}`, {
         method: 'GET',
       });
     },
