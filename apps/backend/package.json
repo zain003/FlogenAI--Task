@@ -16,7 +16,7 @@
     "test:cov": "jest --coverage",
     "test:unit": "jest --testPathPattern=service.spec.ts",
     "test:api": "jest --testPathPattern=controller.spec.ts --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json --forceExit"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

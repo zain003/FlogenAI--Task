@@ -23,7 +23,7 @@ import {
   PaginatedResponse,
 } from './interfaces/chat.interface';
 
-@Controller('conversations')
+@Controller(['api/conversations', 'conversations'])
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}

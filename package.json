@@ -15,6 +15,7 @@
     "test:ui": "npm run test:ui --workspace=apps/frontend",
     "build:frontend": "npm run build --workspace=apps/frontend",
     "typecheck:frontend": "npm run typecheck --workspace=apps/frontend",
+    "test:e2e": "npm run test:e2e --workspace=apps/backend --",
     "verify:cluster": "ts-node scripts/verify-cluster.ts"
   },
   "keywords": [],

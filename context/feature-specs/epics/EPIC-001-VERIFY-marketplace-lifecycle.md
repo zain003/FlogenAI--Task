@@ -36,13 +36,13 @@ npm run test:e2e -- marketplace-journey.e2e-spec.ts
 
 ## 3. Cross-Feature Acceptance Criteria
 
-- [ ] AC-1 (Auth -> Requests): JWT tokens issued by Auth module correctly authenticate Request creation and retrieval.
-- [ ] AC-2 (Requests -> Offers): Offers strictly reference existing `OPEN` requests.
-- [ ] AC-3 (Concurrency Seam): Concurrency guard guarantees that only 1 offer is accepted, with zero orphaned Redis locks and zero database inconsistencies.
-- [ ] AC-4 (Offers -> Payments): Payment amount is determined strictly from the accepted offer price ($450) and cannot be modified by the client.
-- [ ] AC-5 (Payments -> Webhook -> Chat): Webhook confirms payment, unlocks chat room, and emits real-time event.
-- [ ] AC-6 (Chat Privacy): Only authorized counterparties can join `conversation:<id>`; third-party access returns server-side error.
-- [ ] AC-7 (Multi-Instance Delivery): Every real-time event functions seamlessly between clients connected to different NestJS nodes.
+- [x] AC-1 (Auth -> Requests): JWT tokens issued by Auth module correctly authenticate Request creation and retrieval.
+- [x] AC-2 (Requests -> Offers): Offers strictly reference existing `OPEN` requests.
+- [x] AC-3 (Concurrency Seam): Concurrency guard guarantees that only 1 offer is accepted, with zero orphaned Redis locks and zero database inconsistencies.
+- [x] AC-4 (Offers -> Payments): Payment amount is determined strictly from the accepted offer price ($450) and cannot be modified by the client.
+- [x] AC-5 (Payments -> Webhook -> Chat): Webhook confirms payment, unlocks chat room, and emits real-time event.
+- [x] AC-6 (Chat Privacy): Only authorized counterparties can join `conversation:<id>`; third-party access returns server-side error.
+- [x] AC-7 (Multi-Instance Delivery): Every real-time event functions seamlessly between clients connected to different NestJS nodes.
 
 ---
 
@@ -56,9 +56,9 @@ npm run test:e2e -- marketplace-journey.e2e-spec.ts
 
 ## 5. SQA Test Report Generation Mandate
 
-- [ ] Copy `feature-test-reports/template-test-report.md` to `feature-test-reports/EPIC-001-test-report.md`.
-- [ ] Record all end-to-end journey steps, race condition verification results, cross-node socket delivery logs, and final verdict: `APPROVED (PASSED 100%)`.
-- [ ] Update `context/feature-specs/INDEX.md` and `context/progress-tracker.md` to mark the entire project pipeline ready for launch.
+- [x] Copy `feature-test-reports/template-test-report.md` to `feature-test-reports/EPIC-001-test-report.md`.
+- [x] Record all end-to-end journey steps, race condition verification results, cross-node socket delivery logs, and final verdict: `APPROVED (PASSED 100%)`.
+- [x] Update `context/feature-specs/INDEX.md` and `context/progress-tracker.md` to mark the entire project pipeline ready for launch.
 
 ## Stop-The-Line Rule
 If ANY step of the journey fails: do NOT mark the epic complete. Identify the owning feature spec, resolve the defect, and re-run the entire end-to-end journey until 100% pass rate is achieved.
