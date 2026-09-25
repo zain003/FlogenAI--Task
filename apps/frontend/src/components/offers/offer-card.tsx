@@ -8,13 +8,14 @@ import {
   formatCurrency,
   formatRelativeDate,
 } from '@/lib/api-client';
-import { Check, CheckCircle2, Clock, DollarSign, Loader2, User, XCircle } from 'lucide-react';
+import { Check, CheckCircle2, Clock, CreditCard, DollarSign, Loader2, User, XCircle } from 'lucide-react';
 
 export interface OfferCardProps {
   offer: OfferEntity;
   isCustomerOwner: boolean;
   requestStatus: RequestStatus;
   onAccept: (offerId: string) => Promise<void>;
+  onPay?: (offer: OfferEntity) => void;
   isAccepting?: boolean;
   disabled?: boolean;
 }
@@ -60,6 +61,7 @@ export function OfferCard({
   isCustomerOwner,
   requestStatus,
   onAccept,
+  onPay,
   isAccepting = false,
   disabled = false,
 }: OfferCardProps) {
@@ -169,6 +171,18 @@ export function OfferCard({
                   <span>Accept Offer</span>
                 </>
               )}
+            </button>
+          )}
+
+          {isAccepted && requestStatus === 'ACCEPTED' && onPay && (
+            <button
+              type="button"
+              data-testid={`pay-offer-button-${offer.id}`}
+              onClick={() => onPay(offer)}
+              className="inline-flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-md transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            >
+              <CreditCard className="h-4 w-4" />
+              <span>Proceed to Payment</span>
             </button>
           )}
         </div>

@@ -91,6 +91,33 @@ export interface AcceptOfferResponse {
   paymentPending: boolean;
 }
 
+export type PaymentStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED';
+
+export interface PaymentEntity {
+  id: string;
+  requestId: string;
+  offerId: string;
+  customerId: string;
+  providerId: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  stripePaymentIntentId: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PaymentIntentResponseDto {
+  clientSecret: string;
+  paymentIntentId: string;
+  amount: number;
+  currency: string;
+}
+
+export interface CreatePaymentIntentDto {
+  offerId: string;
+}
+
 export function formatCurrency(amount: number): string {
   if (typeof amount !== 'number' || isNaN(amount)) return '$0.00';
   return new Intl.NumberFormat('en-US', {
@@ -314,6 +341,21 @@ class ApiClient {
 
     getById: (offerId: string): Promise<OfferEntity> => {
       return this.request<OfferEntity>(`/api/offers/${offerId}`, {
+        method: 'GET',
+      });
+    },
+  };
+
+  public payments = {
+    createIntent: (dto: CreatePaymentIntentDto): Promise<PaymentIntentResponseDto> => {
+      return this.request<PaymentIntentResponseDto>('/api/payments/create-intent', {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      });
+    },
+
+    getByRequestId: (requestId: string): Promise<PaymentEntity> => {
+      return this.request<PaymentEntity>(`/api/payments/by-request/${requestId}`, {
         method: 'GET',
       });
     },

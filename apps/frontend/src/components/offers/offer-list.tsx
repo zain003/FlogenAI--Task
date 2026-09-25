@@ -13,6 +13,7 @@ import { SubmitOfferDialog } from './submit-offer-dialog';
 import {
   AlertCircle,
   CheckCircle,
+  CreditCard,
   DollarSign,
   Loader2,
   MessageSquare,
@@ -28,6 +29,7 @@ export interface OfferListProps {
   requestStatus: RequestStatus;
   isCustomerOwner: boolean;
   onOfferAccepted?: (offer: OfferEntity) => void;
+  onPayOffer?: (offer: OfferEntity) => void;
   /**
    * Live offers injected by the parent page from `offer:created` socket events.
    * OfferList deduplicates these against its own fetched state.
@@ -47,6 +49,7 @@ export function OfferList({
   requestStatus,
   isCustomerOwner,
   onOfferAccepted,
+  onPayOffer,
   liveOffers = [],
   highlightOfferId = null,
 }: OfferListProps) {
@@ -61,6 +64,7 @@ export function OfferList({
   const isProvider = user?.role === 'provider';
   const hasAcceptedOffer =
     requestStatus !== 'OPEN' || offers.some((o) => o.status === 'ACCEPTED');
+  const acceptedWinningOffer = offers.find((o) => o.status === 'ACCEPTED');
 
   // ─── Initial fetch ────────────────────────────────────────────────────────
 
@@ -215,10 +219,23 @@ export function OfferList({
       {successBanner && (
         <div
           role="status"
-          className="mt-4 flex items-start space-x-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-xs text-emerald-300"
+          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-xs text-emerald-300"
         >
-          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-          <p>{successBanner}</p>
+          <div className="flex items-start space-x-2.5">
+            <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+            <p>{successBanner}</p>
+          </div>
+          {onPayOffer && acceptedWinningOffer && (
+            <button
+              type="button"
+              data-testid="proceed-to-payment-button"
+              onClick={() => onPayOffer(acceptedWinningOffer)}
+              className="inline-flex items-center space-x-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow hover:bg-emerald-500 transition"
+            >
+              <CreditCard className="h-3.5 w-3.5" />
+              <span>Proceed to Payment</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -283,6 +300,7 @@ export function OfferList({
                   isCustomerOwner={isCustomerOwner}
                   requestStatus={requestStatus}
                   onAccept={handleAcceptOffer}
+                  onPay={onPayOffer}
                   isAccepting={acceptingId === offer.id}
                   disabled={Boolean(acceptingId) || hasAcceptedOffer}
                 />

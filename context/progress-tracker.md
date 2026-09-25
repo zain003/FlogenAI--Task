@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-004-FE-payments.md` (Stripe Elements Checkout UI).
+- Begin execution of `FEAT-004-INT-payments-webhook.md` (Webhook State Reconciler & Chat Unlock).
 
 ## Feature Implementation Pipeline
 
@@ -17,7 +17,7 @@ Update this file after every meaningful implementation change and test report co
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
 | **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-003-test-report.md`](../feature-test-reports/FEAT-003-test-report.md) |
-| **FEAT-004** | Stripe Payments & Webhook Idempotency | BE (Passed), FE, INT, VERIFY | In Progress | [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md) |
+| **FEAT-004** | Stripe Payments & Webhook Idempotency | BE (Passed), FE (Passed), INT, VERIFY | In Progress | [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md) |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
 | **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
 | **EPIC-001** | Full Marketplace End-to-End Journey | VERIFY | Not Started | `feature-test-reports/EPIC-001-test-report.md` |
@@ -119,15 +119,22 @@ Update this file after every meaningful implementation change and test report co
   - **Multi-Layer SQA Test Suite**: Added 42 automated tests across `payments.service.spec.ts` (18 tests), `payments.controller.spec.ts` (14 tests), `stripe.service.spec.ts` (5 tests), `webhook.spec.ts` (4 idempotency replay tests), and `socket.gateway.spec.ts` (1 test).
   - Monorepo test suite expanded to **197/197 passing tests (152 backend + 45 frontend)** with 100% pass rate, zero compiler or typecheck errors, and clean builds for both NestJS and Next.js 16.
   - Formal SQA Test Report published at [`feature-test-reports/FEAT-004-test-report.md`](../feature-test-reports/FEAT-004-test-report.md).
+- **`FEAT-004-FE-payments.md`**: Stripe Elements Checkout UI & Payment Modal implemented in Next.js 16 (App Router + Turbopack + React 19).
+  - **Stripe Client Singleton**: Implemented `getStripe()` singleton in `stripe-client.ts` initializing `@stripe/stripe-js` (`loadStripe`) using `process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+  - **Stripe Checkout Form**: Created `StripeCheckoutForm` using `@stripe/react-stripe-js` `<CardElement />` with custom dark-mode styling aligned with `context/ui-context.md`. Features test card callout helper (`4242 4242 4242 4242`), in-flight button disabling with spinner (`data-testid="pay-button"`), error banner (`data-testid="payment-error-alert"`), and success confirmation screen (`data-testid="payment-success-confirmation"`).
+  - **Payment Modal**: Created accessible `PaymentModal` with backdrop overlay, ESC key listener, close button (`data-testid="close-payment-modal"`), dynamic price breakdown (`data-testid="payment-modal-price"`), backend intent initialization (`apiClient.payments.createIntent`), loading indicator (`data-testid="payment-intent-loading"`), and retry button on connection failure.
+  - **Customer Flow Integration**: Updated `OfferCard` and `OfferList` to display "Proceed to Payment" action button (`data-testid="pay-offer-button-${offer.id}"`) when request is `ACCEPTED`. Integrated `PaymentModal` into Request Detail page (`/requests/[id]`). Added live `payment:succeeded` Socket.IO event listener to update request status to `PAID` without page reload.
+  - **Fake DOM Test Suite**: Authored 6 comprehensive tests in `src/tests/payments.spec.tsx` covering modal rendering with price breakdown, in-flight pay button disabling, card error alert handling, successful payment confirmation, ESC/close button interaction, and create-intent failure retry.
+  - Monorepo test suite expanded to **203/203 passing tests (152 backend + 51 frontend)** with 100% pass rate, zero compiler or typecheck errors, and clean Next.js 16 Turbopack production build.
 
 ## In Progress
 
-- `FEAT-004-FE-payments.md` (Stripe Elements Checkout UI).
+- `FEAT-004-INT-payments-webhook.md` (Webhook State Reconciler & Chat Unlock).
 
 ## Next Up
 
-- `FEAT-004-FE-payments.md` (Stripe Elements Checkout UI).
 - `FEAT-004-INT-payments-webhook.md` (Webhook State Reconciler & Chat Unlock).
+- `FEAT-004-VERIFY-payments.md` (Payments & Webhook Idempotency Verification Pass).
 
 ## Open Questions & Assumptions
 

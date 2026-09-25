@@ -13,6 +13,7 @@ import {
 } from '@/lib/api-client';
 import { RequestStatusBadge } from '@/components/requests/request-card';
 import { OfferList } from '@/components/offers/offer-list';
+import { PaymentModal } from '@/components/payments/payment-modal';
 import { useAuth } from '@/context/auth-context';
 import { useSocket } from '@/context/socket-context';
 import {
@@ -36,6 +37,10 @@ export default function RequestDetailPage() {
   const [request, setRequest] = useState<ServiceRequestEntity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Payment modal state
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentOffer, setPaymentOffer] = useState<OfferEntity | null>(null);
 
   /**
    * ID of the most recently live-injected offer, cleared after animation window.
@@ -62,6 +67,24 @@ export default function RequestDetailPage() {
           }
         : null,
     );
+    setPaymentOffer(acceptedOffer);
+  };
+
+  const handleOpenPayment = (offer: OfferEntity): void => {
+    setPaymentOffer(offer);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = (): void => {
+    setRequest((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: 'PAID',
+          }
+        : null,
+    );
+    setIsPaymentModalOpen(false);
   };
 
   // ─── Initial data fetch ───────────────────────────────────────────────────
@@ -164,6 +187,27 @@ export default function RequestDetailPage() {
 
     return () => {
       socket.off('offer:accepted', handleOfferAccepted);
+    };
+  }, [socket, id]);
+
+  // ─── Real-time payment:succeeded listener ─────────────────────────────────
+
+  useEffect(() => {
+    if (!socket || !id) return;
+
+    const handlePaymentSucceeded = (payload: {
+      requestId: string;
+      amount: number;
+    }): void => {
+      if (!payload?.requestId || payload.requestId !== id) return;
+      setRequest((prev) => (prev ? { ...prev, status: 'PAID' } : null));
+      setIsPaymentModalOpen(false);
+    };
+
+    socket.on('payment:succeeded', handlePaymentSucceeded);
+
+    return () => {
+      socket.off('payment:succeeded', handlePaymentSucceeded);
     };
   }, [socket, id]);
 
@@ -302,8 +346,19 @@ export default function RequestDetailPage() {
         requestStatus={request.status}
         isCustomerOwner={Boolean(user && user.id === request.customerId)}
         onOfferAccepted={handleOfferAccepted}
+        onPayOffer={handleOpenPayment}
         liveOffers={liveOffers}
         highlightOfferId={newlyArrivedOfferId}
+      />
+
+      {/* Stripe Elements Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        offer={paymentOffer}
+        requestId={request.id}
+        requestTitle={request.title}
+        onPaymentSuccess={handlePaymentSuccess}
       />
     </div>
   );

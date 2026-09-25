@@ -112,6 +112,7 @@ describe('FEAT-002-INT: Real-Time Request Broadcast (Provider Live Feed)', () =>
       expect(screen.getByText('Real-Time Feed Live')).toBeInTheDocument();
       expect(activeMockSocket).not.toBeNull();
       expect(activeMockSocket?.auth?.token).toBe('valid-provider-token');
+      expect(activeMockSocket?.listenerCount('request:created')).toBeGreaterThan(0);
     });
 
     // Simulate backend emitting request:created over Socket.IO
@@ -155,6 +156,8 @@ describe('FEAT-002-INT: Real-Time Request Broadcast (Provider Live Feed)', () =>
     await waitFor(() => {
       expect(screen.getByTestId('empty-state')).toBeInTheDocument();
       expect(screen.getByText('Real-Time Feed Live')).toBeInTheDocument();
+      expect(activeMockSocket).not.toBeNull();
+      expect(activeMockSocket?.listenerCount('request:created')).toBeGreaterThan(0);
     });
 
     // Emit the same event twice consecutively
@@ -201,6 +204,8 @@ describe('FEAT-002-INT: Real-Time Request Broadcast (Provider Live Feed)', () =>
     await waitFor(() => {
       expect(getAllSpy).toHaveBeenCalledTimes(1);
       expect(screen.getByText('Real-Time Feed Live')).toBeInTheDocument();
+      expect(activeMockSocket).not.toBeNull();
+      expect(activeMockSocket?.listenerCount('reconnect')).toBeGreaterThan(0);
     });
 
     // Trigger reconnect event on socket
