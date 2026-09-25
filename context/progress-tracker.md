@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-003-VERIFY-offers.md` (Offers & Concurrency SQA Verification Pass).
+- Begin execution of `FEAT-004-BE-payments.md` (Stripe PaymentIntent & Idempotent Webhook).
 
 ## Feature Implementation Pipeline
 
@@ -16,7 +16,7 @@ Update this file after every meaningful implementation change and test report co
 | :--- | :--- | :--- | :--- | :--- |
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
-| **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Passed), VERIFY (Next) | In Progress | `feature-test-reports/FEAT-003-test-report.md` |
+| **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | **Passed** | [`feature-test-reports/FEAT-003-test-report.md`](../feature-test-reports/FEAT-003-test-report.md) |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
 | **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
@@ -102,14 +102,23 @@ Update this file after every meaningful implementation change and test report co
     - 4 frontend integration tests in `offers-realtime.spec.tsx` (offer:created banner + indicator, offer:accepted status badge, request:closed provider feed, idempotency no-op).
   - Monorepo test suite expanded to **155/155 passing tests (110 backend + 45 frontend)** with 100% pass rate and zero compiler or linter errors.
 
+- **`FEAT-003-VERIFY-offers.md`**: Completed 100% formal SQA verification pass for Offers & Concurrency Protection (BE, FE, INT).
+  - Verified all 37 Acceptance Criteria across REST API, NestJS service layer, React 19 UI components, Socket.IO gateway, and real-time propagation.
+  - Completed Concurrency & Security Audit: Redis distributed lock (atomic Lua release, orphan prevention via `finally` block), MongoDB Tier 2 defense-in-depth (`findOneAndUpdate({ status: 'OPEN' })`), RBAC enforcement, and socket authentication.
+  - Race Condition Results: 2-way race -> exactly 1 success, 1 HTTP 409. 5-way stress race -> exactly 1 success, 4 HTTP 409. Tier 2 MongoDB check passes even with Redis lock bypassed.
+  - Boundary Analysis: 16 edge cases verified (zero/negative price, empty/short/oversized message, invalid ObjectId, self-offer, non-existent request, duplicate socket events, lock orphan, Redis fallback).
+  - Resolved 2 defects during SQA cycle: `BUG-INT-01` (missing `MarketplaceGateway` mock in concurrency spec) and `BUG-INT-02` (socket useEffect timing race in frontend integration test).
+  - Confirmed multi-layer test suite pass rate of 100% with 155/155 tests passing (110 backend + 45 frontend) and zero failures.
+  - Published formal SQA Test Report at [`feature-test-reports/FEAT-003-test-report.md`](../feature-test-reports/FEAT-003-test-report.md).
+
 ## In Progress
 
-- `FEAT-003-VERIFY-offers.md` (Offers & Concurrency SQA Verification Pass).
+- `FEAT-004-BE-payments.md` (Stripe PaymentIntent & Idempotent Webhook).
 
 ## Next Up
 
-- `FEAT-003-VERIFY-offers.md` (Offers SQA Verification Pass).
 - `FEAT-004-BE-payments.md` (Stripe PaymentIntent & Idempotent Webhook).
+- `FEAT-004-FE-payments.md` (Stripe Elements Checkout UI).
 
 ## Open Questions & Assumptions
 
