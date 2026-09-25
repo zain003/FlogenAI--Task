@@ -222,4 +222,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { status: 'error', error: err?.message || 'Persistence failed' };
     }
   }
+
+  /**
+   * Broadcasts a persisted message to conversation room across all cluster nodes.
+   * Can be called by ChatController when messages are submitted via REST API.
+   */
+  broadcastMessage(conversationId: string, message: MessageEntity): void {
+    if (this.server) {
+      const roomName = `conversation:${conversationId}`;
+      this.server.to(roomName).emit('message:new', { message });
+      this.logger.log(
+        `Broadcasted message:new (${message.id}) to room '${roomName}'`,
+      );
+    }
+  }
 }
+

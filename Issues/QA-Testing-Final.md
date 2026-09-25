@@ -1,21 +1,21 @@
-# Real-Time Service Marketplace (FlogenAI) — QA Audit & Testing Plan (v2)
+# Real-Time Service Marketplace (FlogenAI) — QA Audit & Testing Plan (v3)
 
-> **About this Document:** This document serves as the project-tailored QA audit specification, execution script, and quality assurance framework for the Real-Time Service Marketplace (FlogenAI). It is derived from `context/project-overview.md`, `context/feature-specs/Project-scope.md`, `context/architecture.md`, `000-shared-contracts.md`, and all feature specifications (`FEAT-001` through `FEAT-006`, and `EPIC-001`).
+> **About this Document:** This document serves as the project-tailored QA audit specification, execution script, and quality assurance framework for the Real-Time Service Marketplace (FlogenAI). It is derived from `context/project-overview.md`, `context/feature-specs/Project-scope.md`, `context/architecture.md`, `000-shared-contracts.md`, `000-nonfunctional-contracts.md`, `000-infra-contracts.md`, and all feature specifications (`FEAT-001` through `FEAT-006`, and `EPIC-001`).
 
 ---
 
-## Project Context
+## 1. Project Context & Architectural Foundation
 
 - **Project name:** Real-Time Service Marketplace (FlogenAI)
-- **Tech stack:** 
-  - **Frontend:** Next.js 16 (App Router, Turbopack, React 19, Tailwind CSS)
-  - **Backend:** NestJS (TypeScript, Node.js, Express)
-  - **Database:** MongoDB 6.0 (Mongoose ODM)
-  - **Cache / Broker / Locks:** Redis 7.0 (ioredis, @socket.io/redis-adapter)
-  - **Payments:** Stripe (Node.js SDK, Stripe Elements, Test Mode)
-  - **Load Balancer / Reverse Proxy:** Nginx (Alpine) with sticky IP-hash and WebSocket upgrade forwarding
+- **Tech stack:**
+  - **Frontend:** Next.js 16 (App Router, Turbopack, React 19, Tailwind CSS, Lucide React)
+  - **Backend:** NestJS 10 (TypeScript, Node.js, Express, Passport JWT, Mongoose, Throttler)
+  - **Database:** MongoDB 6.0 (Mongoose ODM, compound indexes, atomic conditional operations)
+  - **Cache / Broker / Locks:** Redis 7.0 (`redis` client, `@socket.io/redis-adapter`, distributed mutex locks with atomic Lua release)
+  - **Payments:** Stripe Test Mode (Stripe Node.js SDK, Stripe Elements via `@stripe/react-stripe-js`, cryptographic webhook HMAC-SHA256 signature verification)
+  - **Load Balancer / Reverse Proxy:** Nginx (Alpine) with sticky `ip_hash` upstream and WebSocket upgrade protocol forwarding
   - **Orchestration:** Docker & Docker Compose
-- **Spec / Reference docs:**
+- **Specification & Reference Documents:**
   - `context/project-overview.md`
   - `context/feature-specs/Project-scope.md`
   - `context/architecture.md`
@@ -25,207 +25,229 @@
   - `context/feature-specs/000-shared-contracts.md`
   - `context/feature-specs/000-nonfunctional-contracts.md`
   - `context/feature-specs/000-infra-contracts.md`
-  - Feature specs: `FEAT-001` (Auth), `FEAT-002` (Requests), `FEAT-003` (Offers/Concurrency), `FEAT-004` (Stripe), `FEAT-005` (Chat), `FEAT-006` (Scaling), and `EPIC-001` (Lifecycle).
-- **User roles in this app:**
-  - `customer`: Authors service requests, receives real-time bids, accepts single winning offer under distributed lock, executes Stripe payments, and chats with the accepted provider.
-  - `provider`: Browses open marketplace requests, submits competitive price/proposal offers, receives acceptance notifications, and chats with customer after acceptance.
-  - `guest` (Unauthenticated): Views landing page and public marketplace feeds; restricted from mutations, offers, payments, and chat.
-- **Core domain flows:**
-  1. **Authentication & Role-Based Access Control:** Registration and login for Customer and Provider, bcrypt hashing, JWT issuance, REST route guards (`@Roles`), Socket.IO handshake authentication, and rate limiting.
-  2. **Service Request Publication & Real-Time Broadcast:** Customer creates service request (Title, Description, Budget). Backend emits `request:created` via Socket.IO/Redis Pub/Sub adapter to the shared `providers` room across dual NestJS instances.
-  3. **Offer Submission & Distributed Concurrency Lock:** Connected providers submit offers. Customer receives `offer:created` in private room `user:<id>`. Customer accepts an offer: Redis distributed lock (`mkt:lock:request:<id>`) + MongoDB atomic conditional mutation (`findOneAndUpdate({ _id: id, status: 'OPEN' })`) physically prevents double-acceptance across distributed nodes. Winning offer marked `ACCEPTED`, peers marked `REJECTED`, and real-time `offer:accepted` & `request:closed` events broadcast.
-  4. **Server-Calculated Stripe Payment & Idempotent Webhook:** Backend validates accepted offer and creates Stripe PaymentIntent (strictly server-enforced amount). Customer checks out via Stripe Elements. Webhook verifies cryptographic HMAC-SHA256 signature, enforces idempotency against `processed_events` table (zero duplicate side-effects on replay), transitions request to `PAID`, and unlocks chat.
-  5. **Authorized Real-Time Chat:** Customer and Provider join `conversation:<id>` with strict server-side participant authorization. Persistence-first invariant: messages saved to MongoDB before broadcasting `message:new` across cluster instances. Unrelated users are denied room access.
-  6. **Horizontal Scaling & Multi-Node Cluster:** Dual NestJS backend instances (Port 3001 & Port 3002) synchronized via Redis Pub/Sub behind an Nginx reverse proxy load balancer (Port 8080).
-- **Environment(s) to test:**
-  - **Multi-Instance Docker Cluster:**
-    - Next.js 16 Frontend: `http://localhost:3000`
-    - Nginx Load Balancer: `http://localhost:8080` (API routes `/api/*` and WebSocket `/socket.io/*`)
-    - NestJS Backend Instance 1: `http://localhost:3001`
-    - NestJS Backend Instance 2: `http://localhost:3002`
-    - MongoDB: `localhost:27017`
-    - Redis: `localhost:6379`
-  - **Automated Test Environments:**
-    - Monorepo unit/API/concurrency suites: `npm run test:backend` (Jest)
-    - Monorepo Fake DOM / UI suites: `npm run test:ui` (Vitest + React Testing Library)
-    - End-to-End Lifecycle suite: `npm run test:e2e` (Jest E2E runner)
-    - Multi-node cluster verification: `npm run verify:cluster` (ts-node)
-- **Out of current scope:** Live Stripe production charges/disputes, video/audio chat, chat file attachments, third-party social logins (OAuth), public marketing pages beyond minimal landing page, unbounded search engines (Elasticsearch).
+  - `context/feature-specs/INDEX.md` & `context/progress-tracker.md`
+  - Feature specs: `FEAT-001` (Auth), `FEAT-002` (Requests), `FEAT-003` (Offers/Concurrency), `FEAT-004` (Stripe), `FEAT-005` (Chat), `FEAT-006` (Scaling), and `EPIC-001` (Lifecycle Journey).
 
 ---
 
-## Test Data & Access
+## 2. User Roles & Access Boundaries
 
-- **Test accounts per role:**
-  - `customer`: `customer@test.com` / `Password123!` (or dynamically provisioned `qa-customer@test.com`)
-  - `provider` (1): `provider1@test.com` / `Password123!` (or dynamically provisioned `qa-provider1@test.com`)
-  - `provider` (2): `provider2@test.com` / `Password123!` (or dynamically provisioned `qa-provider2@test.com`)
+- **`customer`**:
+  - Authors service requests (`title`: 3-100 chars, `description`: 10-2000 chars, `budget` >= $1.00 USD).
+  - Receives real-time bids via private room `user:<userId>` (`offer:created`).
+  - Accepts a single winning offer under distributed lock protection (`mkt:lock:request:<id>`).
+  - Initiates server-calculated Stripe PaymentIntents (client cannot tamper with pricing).
+  - Executes test checkout via Stripe Elements.
+  - Chats with the accepted provider after payment confirmation (`conversation:<conversationId>`).
+- **`provider`**:
+  - Browses open marketplace requests in a real-time feed with live `request:created` and `request:closed` event streaming.
+  - Submits competitive price and proposal offers (`price` >= $1.00 USD, `message`: 5-1000 chars).
+  - Receives real-time acceptance notifications (`offer:accepted`).
+  - Chats with the customer in real time after acceptance and payment.
+- **`guest` (Unauthenticated)**:
+  - Can view the landing page and public marketplace feeds.
+  - Gated from mutations, request publishing, offer submissions, Stripe checkouts, and chat rooms (receives HTTP 401 or client-side login redirect).
+
+---
+
+## 3. Test Environments & Automated Test Commands
+
+### Multi-Instance Docker Infrastructure Topology
+- **Next.js 16 Frontend:** `http://localhost:3000`
+- **Nginx Reverse Proxy / Load Balancer:** `http://localhost:8080`
+  - API routes: `http://localhost:8080/api/*`
+  - Socket.IO gateway: `ws://localhost:8080/socket.io/*`
+- **NestJS Backend Node 1:** `http://localhost:3001`
+- **NestJS Backend Node 2:** `http://localhost:3002`
+- **MongoDB:** `localhost:27017` (database: `marketplace`)
+- **Redis:** `localhost:6379` (pub/sub adapter and distributed locks)
+
+### Automated Test Suites Execution Commands
+```bash
+# 1. Backend Multi-Layer Test Suite (Jest: 21 suites, 222+ tests)
+npm run test:backend
+
+# 2. Frontend Fake DOM / Component Test Suite (Vitest + React Testing Library: 13 suites, 73+ tests)
+npm run test:ui
+
+# 3. Full Marketplace End-to-End Lifecycle Suite (Jest E2E Runner: 7 journey steps)
+npm run test:e2e
+
+# 4. TypeScript Static Typecheck Verification
+npm run typecheck:backend
+npm run typecheck:frontend
+
+# 5. Multi-Instance Cluster Synchronization Verification (ts-node)
+npm run verify:cluster
+```
+
+---
+
+## 4. Test Data, Credentials & Seed State
+
+- **Standard Test Accounts:**
+  - `customer`: `customer@test.com` / `Password123!` (or dynamic fixture `qa-cust-${Date.now()}@test.com`)
+  - `provider 1`: `provider1@test.com` / `Password123!` (or dynamic fixture `qa-prov1-${Date.now()}@test.com`)
+  - `provider 2`: `provider2@test.com` / `Password123!` (or dynamic fixture `qa-prov2-${Date.now()}@test.com`)
   - `guest`: Unauthenticated visitor (no credentials)
-- **Seed data assumptions:**
+- **Token Storage Key:** `auth_token` in browser `localStorage` (managed via `ApiClient` and `AuthProvider`).
+- **Seed Data Assumptions:**
   - Initial service request: Title: "Fix Kitchen Plumbing", Description: "Need urgent repair on leaking kitchen sink pipe.", Budget: $150.00, Status: `OPEN`, owned by Customer.
-  - Seed command: `npm run seed` or automated fixture initialization.
-- **Sandbox/test credentials for third parties:**
-  - Stripe Test Card Number: `4242 4242 4242 4242`
-  - Expiration Date: Any future month/year (e.g., `12/28`)
-  - CVC: `123`
-  - ZIP: `90210`
-  - Stripe Webhook Signing Secret: `whsec_...` or test secret `test_webhook_secret`
-- **Reset procedure:**
-  - For Docker environment: `docker compose down -v && docker compose up -d` or executing test scripts with unique timestamped identities (`qa-${Date.now()}@test.com`).
+- **Stripe Sandbox Credentials:**
+  - Card Number: `4242 4242 4242 4242`
+  - Expiry: Any future date (e.g., `12/28`)
+  - CVC: `123` | ZIP: `90210`
+  - Webhook Signing Secret: `whsec_...` or local test secret `whsec_placeholder_secret_for_testing`
+- **Redis Keys & Namespaces:**
+  - Distributed lock: `mkt:lock:request:<requestId>`
+  - Rate limiting: `mkt:rate:<ip>` or NestJS Throttler memory/Redis storage
+  - Socket rooms: `providers`, `user:<userId>`, `conversation:<conversationId>`
 
 ---
 
-## Role & Objective
+## 5. Severity Rubric
 
-You are a senior QA engineer performing a comprehensive functional, navigational, security, and usability audit of the FlogenAI Real-Time Service Marketplace.
-
-**Goal:** Systematically trace every clickable element, route, form, API endpoint, Socket.IO event, and distributed user flow across Customer, Provider, and Guest roles, verify each against expected behavior, and log every defect, inconsistency, or missing safeguard as a discrete issue file in `/issues` using the standard format.
-
----
-
-## Severity Rubric
-
-- **Critical:** Blocks a core marketplace flow entirely for any role (cannot register/login, cannot create request, cannot submit offer, cannot accept offer, double-acceptance occurs, or exploitable security/auth-bypass).
-- **High:** Degrades a core flow significantly (e.g., server crashes with 500 on valid edge inputs, broken status transition, data corruption, or role-based access control gap).
+- **Critical:** Blocks a core marketplace flow entirely for any role (e.g., cannot register/login, cannot create request, cannot submit offer, cannot accept offer, double-acceptance occurs, or exploitable security/auth-bypass).
+- **High:** Degrades a core flow significantly (e.g., real-time messaging fails to broadcast to counterparty, server crashes with 500 on valid edge inputs, broken status transition, data corruption, or role-based access control gap).
 - **Medium:** Non-blocking functional bug, unhandled recoverable error, missing validation that doesn't lead to database corruption, responsive layout gap that hides navigation, or missing rate-limiting safeguards.
 - **Low:** Cosmetic issue, copy/label mismatch, minor validation message discrepancy, or non-blocking usability friction.
 
-## Non-Invasive Security Boundary
+---
 
-Non-invasive security checks verify:
-- Input sanitization and escaping (e.g., submitting `<script>alert(1)</script>` into request titles, descriptions, offer proposals, or chat inputs to confirm they render escaped as plain text).
-- Server-side authorization enforcement on REST endpoints (`@Roles`, ownership validation) and Socket.IO handshakes / rooms (`conversation:join` verification).
-- Rate-limiting headers or HTTP 429 lockout responses after rapid repeated attempts on auth endpoints.
-- Absence of exposed JWT secrets, Stripe secret keys, or raw credit card data.
+## 6. Audit Scope & Verification Checklist
+
+### Scope 1: Authentication & Role-Based Access Control (`FEAT-001`)
+- [ ] **Registration (`POST /api/auth/register`):**
+  - Customer and Provider role toggle properly sets role.
+  - Password hashing with bcrypt (cost factor >= 10).
+  - Validation: Email format, name min 2 chars, password min 8 chars.
+  - Duplicate email returns HTTP 409 Conflict.
+  - Rate limiting: Max 10 requests per minute per IP (HTTP 429 Too Many Requests).
+- [ ] **Login (`POST /api/auth/login`):**
+  - Valid credentials return signed JWT (`{ sub, email, role }`) and user record.
+  - Invalid credentials return HTTP 401 Unauthorized with user-friendly alert.
+  - Rate limiting: Max 10 requests per minute per IP.
+- [ ] **Profile (`GET /api/auth/me`):**
+  - Valid token returns user entity without `passwordHash`.
+  - Missing or expired token returns HTTP 401.
+- [ ] **Guards & RBAC:**
+  - `@Roles('customer')` blocks provider with HTTP 403 Forbidden.
+  - `@Roles('provider')` blocks customer with HTTP 403 Forbidden.
+- [ ] **Client Session Handling:**
+  - Stored token under `auth_token` in `localStorage`.
+  - Expired token is evicted cleanly with notification (`/login?reason=expired`).
+  - Unauthenticated routes gracefully redirect to `/login`.
+
+### Scope 2: Service Requests Management & Real-Time Broadcast (`FEAT-002`)
+- [ ] **Request Creation (`POST /api/requests`):**
+  - Restricted to `customer` role (`@Roles('customer')`).
+  - Input validation: Title (3-100 chars), Description (10-2000 chars), Budget (>= $1.00 USD).
+  - Whitespace-only title or description must be trimmed and rejected with HTTP 400 Bad Request.
+  - Successful creation initializes status `OPEN` and emits `request:created` over Socket.IO.
+- [ ] **Request Listing & Queries:**
+  - `GET /api/requests`: Paginated list of open requests (capped at 50 max per page).
+  - `GET /api/requests/my-requests`: Customer's private requests with ownership filter.
+  - `GET /api/requests/:id`: Single request details; invalid ObjectId returns HTTP 400; non-existent returns HTTP 404.
+- [ ] **Real-Time Broadcast (`FEAT-002-INT`):**
+  - Connected providers auto-join room `providers`.
+  - `request:created` event arrives on connected providers' dashboards within 200ms without page refresh.
+  - Customer sockets do NOT receive the broadcast in `providers` room.
+
+### Scope 3: Offers & Concurrency-Guarded Acceptance (`FEAT-003`)
+- [ ] **Offer Submission (`POST /api/requests/:id/offers`):**
+  - Restricted to `provider` role (`@Roles('provider')`).
+  - Request must have status `OPEN`; closed/accepted requests reject offers with HTTP 400.
+  - Customer cannot submit an offer on their own request (HTTP 400).
+  - Price validation: Price >= $1.00 USD, message 5-1000 chars.
+  - Real-time `offer:created` emitted to customer's private room `user:<customerId>` with `{ offer, requestTitle }`.
+- [ ] **Offer Listing (`GET /api/requests/:id/offers`):**
+  - Paginated list of offers for the request, sorted newest first.
+- [ ] **Concurrency-Guarded Acceptance (`POST /api/offers/:id/accept`):**
+  - Customer ownership verified (`request.customerId === req.user.id`).
+  - Tier 1: Redis distributed lock (`mkt:lock:request:<requestId>`, 10s TTL).
+  - Tier 2: Atomic MongoDB conditional mutation (`findOneAndUpdate({ _id: requestId, status: 'OPEN' })`).
+  - On success: Winning offer -> `ACCEPTED`, Peer offers -> `REJECTED`, Request -> `ACCEPTED`.
+  - Concurrency Race Test: 10 parallel acceptance requests hitting Node 1 and Node 2 simultaneously result in exactly 1 HTTP 200 OK and 9 HTTP 409 Conflicts. Zero orphaned locks.
+  - Real-time `offer:accepted` dispatched to winning provider; `request:closed` broadcast to `providers` room.
+
+### Scope 4: Stripe Payments & Idempotent Webhook Engine (`FEAT-004`)
+- [ ] **PaymentIntent Creation (`POST /api/payments/create-intent`):**
+  - Caller must be customer owner of the accepted offer.
+  - Amount calculated strictly on backend from accepted offer price (`amount = price * 100` cents). Frontend amount is ignored.
+  - Request and offer must be in `ACCEPTED` status.
+- [ ] **Webhook Signature Verification (`POST /api/payments/webhook`):**
+  - Verifies raw-body HMAC-SHA256 signature via `stripe.webhooks.constructEvent`.
+  - Tampered or missing signature returns HTTP 400 Bad Request.
+- [ ] **Webhook Idempotency (`processed_events` table):**
+  - On `payment_intent.succeeded`: Payment transitions to `SUCCEEDED`, request transitions to `PAID`, real-time `payment:succeeded` emitted.
+  - Idempotency Replay Test: Sending the exact same webhook event 3 consecutive times returns HTTP 200 OK with zero duplicate state mutations or duplicate emissions.
+  - On `payment_intent.payment_failed`: Payment transitions to `FAILED`, request remains `ACCEPTED` allowing customer to retry.
+
+### Scope 5: Real-Time Chat & Server-Side Room Authorization (`FEAT-005`)
+- [ ] **Conversation Model & Persistence:**
+  - Conversation automatically created upon offer acceptance linking Customer and winning Provider.
+  - Message entity persists in MongoDB (`conversationId`, `senderId`, `content`, `createdAt`).
+  - Message history endpoint (`GET /api/conversations/:id/messages`) paginated in reverse chronological order (limit default 30, max 50).
+- [ ] **Zero-Trust Room Authorization:**
+  - Socket event `conversation:join` checks MongoDB to ensure `user.id === customerId || user.id === providerId`.
+  - Unauthorized third-party users (including losing providers) are denied entry with an error callback.
+- [ ] **Real-Time Message Delivery:**
+  - Sending message from customer must immediately broadcast `message:new` to provider in room `conversation:<conversationId>` across cluster instances.
+  - Verify whether frontend `ChatWindow` sends via Socket.IO `message:send` or REST, and verify that real-time broadcast is delivered to the counterparty.
+  - Persistence-first invariant: Message must be saved to MongoDB before or upon broadcast.
+
+### Scope 6: Horizontal Scaling & Docker Topology (`FEAT-006`)
+- [ ] **Dual Backend Instances (Node 1 on 3001, Node 2 on 3002):**
+  - Socket.IO Redis Pub/Sub adapter synchronizes events across both instances.
+  - Client A on Node 1 receives real-time events emitted by Client B on Node 2.
+- [ ] **Nginx Reverse Proxy (Port 8080):**
+  - Routes `/api/*` and upgrades `/socket.io/*` with sticky `ip_hash`.
+- [ ] **Docker Compose:**
+  - All 6 services (Next.js, Node 1, Node 2, MongoDB, Redis, Nginx) start cleanly via `docker compose up`.
+
+### Scope 7: End-to-End Marketplace Lifecycle (`EPIC-001`)
+- [ ] **Full 7-Step Journey:**
+  1. Registration and login for Customer and 2 Providers.
+  2. Customer creates request -> Providers receive `request:created`.
+  3. Both providers submit competing offers -> Customer receives `offer:created`.
+  4. Concurrent acceptance attack -> Exactly 1 accepted, other rejected with HTTP 409.
+  5. Customer pays via Stripe -> Webhook transitions request to `PAID`.
+  6. Customer and winning provider chat in real time across different NestJS nodes.
+  7. Losing provider is rejected when attempting to join or read the chat room.
+
+### Scope 8: Responsive Layout, Navigation & Accessibility
+- [ ] **Navigation Bar (`NavigationBar`):**
+  - Responsive hamburger menu for mobile viewports (< 640px).
+  - Dynamic role badge (`CUSTOMER` in indigo, `PROVIDER` in amber).
+  - Live socket connection indicator (green pulsing dot when live, gray when disconnected).
+- [ ] **Accessibility (WCAG 2.1 AA):**
+  - Keyboard navigation (Tab/Shift+Tab, Enter/Space).
+  - Modal focus trapping and Escape key closing in `SubmitOfferDialog` and `PaymentModal`.
+  - Screen reader labels (`aria-labelledby`, `role="status"`, `role="alert"`).
 
 ---
 
-## Audit Scope & Verification Checklist
+## 7. QA Audit Execution Protocol
 
-### 1. Global Navigation & Layout
-- Header / Navigation Bar (`NavigationBar`):
-  - Brand logo links to `/`.
-  - Role pill displays `CUSTOMER` (indigo) or `PROVIDER` (amber).
-  - Socket.IO connection pill reflects live status (green pulsing dot when connected, gray when disconnected).
-  - Navigation links: `My Requests` for Customer, `Browse Marketplace` for Provider.
-  - Mobile responsiveness: Test at ~375px (iPhone), ~768px (Tablet), and desktop. Confirm whether navigation links remain accessible or if a mobile menu is required.
-  - Logout action: Clears token from `localStorage`, resets auth context, disconnects socket, and redirects to `/login`.
+Follow these 5 procedural phases during execution:
 
-### 2. Authentication & Account Management
-- Registration (`/register` & `RegisterForm`):
-  - Customer vs. Provider role toggle.
-  - Client-side validation: Name (min 2 chars), Email (valid email format), Password (min 8 chars).
-  - Server-side validation via `RegisterDto`.
-  - Duplicate email handling: Returns HTTP 409 Conflict with clear error message.
-  - Rate limiting on `POST /api/auth/register`: Must enforce 10 requests/minute per IP.
-- Login (`/login` & `LoginForm`):
-  - Valid credentials authenticate and redirect according to role (`customer` -> `/customer/requests`, `provider` -> `/provider/browse`).
-  - Invalid credentials return HTTP 401 Unauthorized with "Invalid email or password" alert.
-  - Rate limiting on `POST /api/auth/login`: 10 requests/minute (returns HTTP 429 Too Many Requests).
-- Session Persistence & Expiry:
-  - Token stored in `localStorage` under `flogen_token`.
-  - On page refresh, `AuthProvider` validates token via `GET /api/auth/me`.
-  - If token is expired or malformed, session must clear cleanly with appropriate feedback.
-- Role-Based Access Control (RBAC):
-  - Provider attempting to access customer endpoints (`POST /api/requests`, `GET /api/requests/my-requests`, `POST /api/offers/:id/accept`) receives HTTP 403 Forbidden.
-  - Customer attempting to submit an offer (`POST /api/requests/:id/offers`) receives HTTP 403 Forbidden.
-  - Client-side routes (`/customer/requests`, `/provider/browse`): Unauthenticated visitors and unauthorized roles should be gracefully redirected or gated.
-
-### 3. Core Domain Flows (End-to-End per Role)
-- **Customer Journey:**
-  1. Login as Customer.
-  2. Navigate to `/customer/requests`.
-  3. Fill out `CreateRequestForm` (Title: 3-100 chars, Description: 10-2000 chars, Budget > 0).
-  4. Submit form: Request immediately prepended to local list and broadcast to providers.
-  5. Click request to open `/requests/[id]`.
-  6. Receive real-time `offer:created` event from provider bids (with arrival banner and glow highlight).
-  7. Click "Accept Offer" on chosen bid.
-  8. Verify concurrency lock: Winning offer transitions to `ACCEPTED`, peers transition to `REJECTED`, request transitions to `ACCEPTED`.
-  9. Click "Proceed to Payment": Opens `PaymentModal` with backend-verified offer price.
-  10. Complete Stripe test card payment: Request status updates to `PAID`, unlocking the "Open Chat" banner.
-  11. Click "Open Chat": Navigates to `/chat/[requestId]`, exchanges real-time messages with the provider.
-- **Provider Journey:**
-  1. Login as Provider.
-  2. Navigate to `/provider/browse`.
-  3. View open requests feed; observe live arrival of new requests via `request:created`.
-  4. Click on an open request to open `/requests/[id]`.
-  5. Click "Submit Offer": Opens `SubmitOfferDialog`.
-  6. Submit price and proposal message.
-  7. When customer accepts offer: Receive real-time `offer:accepted` event; request updates to `ACCEPTED`.
-  8. Once customer completes payment: Chat is unlocked; provider navigates to `/chat/[requestId]` to communicate.
-
-### 4. Forms & Data Input Validation Edge Cases
-- `CreateRequestForm`:
-  - Empty fields: Trigger client-side validation errors.
-  - Whitespace-only input: Submitting `"   "` for title or `"          "` for description. Verify server rejects with HTTP 400 Bad Request rather than crashing with HTTP 500.
-  - Budget boundaries: Test `$0.00`, negative values (`-50`), non-numeric strings, and fractional values below $1.00 (e.g., `$0.50`). Check consistency between client validation and backend `@Min(1)`.
-  - Max lengths: Title > 100 characters, Description > 2000 characters.
-  - XSS strings: `<script>alert('xss')</script>` in title/description must render escaped as text.
-- `SubmitOfferDialog`:
-  - Empty or negative price: Blocked client-side and server-side (`@Min(1)`).
-  - Whitespace-only message: Verify server rejects with HTTP 400 instead of HTTP 500.
-  - Self-offer prevention: Customer attempting to submit offer on their own request must return HTTP 400.
-- `ChatInput`:
-  - Enter key sends message; Shift+Enter creates newline.
-  - Whitespace-only message: Send button disabled; no empty message persisted or emitted.
-  - Max length: 2000 characters enforced.
-  - Input cleared immediately on submission to prevent double-send.
-
-### 5. Dashboards, Lists & Data Views
-- Pagination:
-  - Verify limit is capped at 50 records max across `GET /api/requests`, `GET /api/requests/:id/offers`, `GET /api/conversations/:id/messages`.
-- Empty states:
-  - Zero customer requests: Displays "No service requests found" card.
-  - Zero open provider requests: Displays "No service requests found" empty state.
-  - Zero offers: Displays "No offers submitted yet" placeholder.
-  - Zero chat messages: Displays "No messages yet. Say hello to start the conversation."
-- Loading states:
-  - Skeletons and spinners appear during network transit and clear on load.
-- Real-time updates:
-  - `request:created`: Prepended to provider feed with flash animation.
-  - `offer:created`: Appended to customer offer list with glow animation.
-  - `request:closed`: Updates status to ACCEPTED on provider browse page.
-  - `payment:succeeded`: Updates badge to PAID and reveals chat button without page refresh.
-
-### 6. CRUD Operations & State Machine Transitions
-- Service Request status transitions: `OPEN` -> `ACCEPTED` -> `PAID` -> `COMPLETED` / `CANCELLED`.
-- Offer status transitions: `PENDING` -> `ACCEPTED` or `REJECTED`.
-- Atomic rollback: If offer acceptance fails midway, no partial state transitions persist.
-
-### 7. Payments & Webhook Idempotency
-- Server-determined amounts:
-  - `POST /api/payments/create-intent` takes only `offerId`. Frontend never supplies monetary amounts.
-  - Backend verifies caller is customer owner and offer is `ACCEPTED`.
-- Webhook signature verification:
-  - `POST /api/payments/webhook` verifies raw body HMAC-SHA256 signature via `stripe.webhooks.constructEvent`.
-  - Requests with missing or altered signature return HTTP 400.
-- Webhook idempotency (`processed_events`):
-  - Duplicate delivery of the exact same Stripe event ID returns HTTP 200 OK with zero duplicate state transitions or duplicate emissions.
-
-### 8. Notifications & Real-Time Communications
-- Socket.IO handshakes:
-  - Valid JWT required in handshake `auth.token` or `Authorization: Bearer <token>`. Unauthenticated sockets disconnected.
-- Room isolation:
-  - Providers join `providers` room.
-  - All users auto-join `user:<userId>` private room.
-  - Chat rooms `conversation:<conversationId>` require server-side participant check. Unauthorized sockets are rejected with error and denied entry.
-
-### 9. Concurrency & Race Condition Suite
-- 10 Parallel simultaneous offer acceptance requests fired across Node 1 and Node 2 at the exact same millisecond:
-  - Exactly 1 request succeeds with HTTP 200 OK.
-  - 9 requests rejected with HTTP 409 Conflict.
-  - Database records exactly 1 accepted offer. Zero orphaned Redis locks.
-
-### 10. Accessibility (WCAG 2.1 AA)
-- Keyboard navigation: All inputs, buttons, dialogs accessible via Tab / Shift+Tab.
-- Focus trap and Escape key handling in `SubmitOfferDialog` and `PaymentModal`.
-- Screen reader labels: Form inputs linked to `<label htmlFor="...">`, status alerts decorated with `role="alert"` or `aria-live`.
+1. **Phase 1: Automated Test Suite Execution:**
+   - Run `npm run test:backend`, `npm run test:ui`, `npm run test:e2e`, and typechecks. Record pass/fail counts and test durations.
+2. **Phase 2: Static Contract & Security Boundary Auditing:**
+   - Verify DTO transforms, trim decorators, `@Min` constraints, and environment variable names (`NEXT_PUBLIC_SOCKET_URL` vs `NEXT_PUBLIC_WS_URL`).
+3. **Phase 3: Live End-to-End Multi-Role Workflow Auditing:**
+   - Audit customer request creation, provider offer submission, concurrency acceptance, Stripe checkout modal, and chat messaging.
+4. **Phase 4: Edge Case & Fault Injection Testing:**
+   - Test sub-dollar inputs ($0.01 to $0.99), whitespace strings, duplicate webhook replays, declined test cards, and cross-tenant chat eavesdropping.
+5. **Phase 5: Issue Authoring & Index Synchronization:**
+   - Author a discrete Markdown file in `/issues` named `ISSUE-XXX-short-slug.md` for every defect found.
+   - Synchronize `/issues/ISSUES-INDEX.md` with updated totals and action items.
 
 ---
 
-## Deliverable & Issue Reporting Format
+## 8. Issue Reporting Template
 
-For every issue identified during execution, author a dedicated Markdown file in `/issues` named `ISSUE-XXX-short-slug.md` matching this template:
+For every identified defect, create `Issues/ISSUE-XXX-short-slug.md` using this exact structure:
 
 ```markdown
 # ISSUE-XXX: <Short descriptive title>
@@ -251,7 +273,7 @@ What actually occurs.
 Critical / High / Medium / Low — per the Severity Rubric.
 
 ## Category
-(Navigation / Auth / Forms / CRUD / Payments / Security / Accessibility / Usability / Performance)
+(Navigation / Auth / Forms / CRUD / Payments / Security / Real-Time / Accessibility / Usability / Performance)
 
 ## Scope
 - **In Scope:** What this issue covers.
@@ -270,5 +292,3 @@ Open
 ## Notes
 Technical details, logs, or code references.
 ```
-
-Upon completing the audit, generate `ISSUES-INDEX.md` in `/issues` listing all issues grouped by severity.

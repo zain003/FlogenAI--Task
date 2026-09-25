@@ -10,6 +10,7 @@ import {
 import * as request from 'supertest';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
+import { ChatGateway } from '../socket/chat.gateway';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Reflector } from '@nestjs/core';
@@ -83,6 +84,10 @@ describe('ChatController (API Route Contract Tests)', () => {
     getMessages: jest.fn(),
   };
 
+  const mockChatGateway = {
+    broadcastMessage: jest.fn(),
+  };
+
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [ChatController],
@@ -90,6 +95,10 @@ describe('ChatController (API Route Contract Tests)', () => {
         {
           provide: ChatService,
           useValue: mockChatService,
+        },
+        {
+          provide: ChatGateway,
+          useValue: mockChatGateway,
         },
         Reflector,
         RolesGuard,
@@ -356,6 +365,10 @@ describe('ChatController (API Route Contract Tests)', () => {
         validConversationId,
         customerId,
         'Hello, what time will you arrive?',
+      );
+      expect(mockChatGateway.broadcastMessage).toHaveBeenCalledWith(
+        validConversationId,
+        mockMessageEntity,
       );
     });
 

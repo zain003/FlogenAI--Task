@@ -4,12 +4,16 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
+  Optional,
   Param,
   Post,
   Query,
   UseGuards,
+  forwardRef,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
+import { ChatGateway } from '../socket/chat.gateway';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -26,7 +30,12 @@ import {
 @Controller(['api/conversations', 'conversations'])
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    @Optional()
+    @Inject(forwardRef(() => ChatGateway))
+    private readonly chatGateway?: ChatGateway,
+  ) {}
 
   /**
    * Internal/Service endpoint to ensure a conversation exists for a request.
@@ -86,6 +95,17 @@ export class ChatController {
     @Body() dto: CreateMessageDto,
     @CurrentUser() user: any,
   ): Promise<MessageEntity> {
-    return this.chatService.saveMessage(id, user.id, dto.content);
+    const savedMessage = await this.chatService.saveMessage(
+      id,
+      user.id,
+      dto.content,
+    );
+
+    // Broadcast message:new across cluster via Socket.IO / Redis Pub/Sub adapter
+    if (this.chatGateway) {
+      this.chatGateway.broadcastMessage(id, savedMessage);
+    }
+
+    return savedMessage;
   }
 }

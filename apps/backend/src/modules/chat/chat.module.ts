@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
@@ -13,6 +13,7 @@ import {
 } from '../requests/schemas/service-request.schema';
 import { Offer, OfferSchema } from '../offers/schemas/offer.schema';
 import { AuthModule } from '../auth/auth.module';
+import { SocketModule } from '../socket/socket.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AuthModule } from '../auth/auth.module';
       { name: Offer.name, schema: OfferSchema },
     ]),
     AuthModule,
+    forwardRef(() => SocketModule),
   ],
   controllers: [ChatController],
   providers: [ChatService],
