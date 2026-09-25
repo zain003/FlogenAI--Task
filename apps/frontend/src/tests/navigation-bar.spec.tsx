@@ -108,4 +108,59 @@ describe('NavigationBar (Dynamic Auth & Role Indicator)', () => {
       expect(mockPush).toHaveBeenCalledWith('/login');
     });
   });
+
+  it('should toggle mobile menu and render customer links when customer clicks mobile toggle', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('auth_token', 'valid-token');
+    vi.spyOn(apiClient.auth, 'getMe').mockResolvedValue({
+      id: 'cust-id',
+      email: 'customer@market.com',
+      name: 'Customer User',
+      role: 'customer',
+    });
+
+    render(
+      <AuthProvider>
+        <NavigationBar />
+      </AuthProvider>
+    );
+
+    const toggleBtn = await screen.findByTestId('mobile-menu-toggle');
+    expect(screen.queryByTestId('mobile-nav-menu')).not.toBeInTheDocument();
+
+    await user.click(toggleBtn);
+    expect(screen.getByTestId('mobile-nav-menu')).toBeInTheDocument();
+    expect(screen.getByTestId('mobile-nav-customer-requests')).toBeInTheDocument();
+
+    // Clicking the link closes the mobile menu
+    await user.click(screen.getByTestId('mobile-nav-customer-requests'));
+    expect(screen.queryByTestId('mobile-nav-menu')).not.toBeInTheDocument();
+  });
+
+  it('should render provider links in mobile menu and close on Escape key', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('auth_token', 'valid-token');
+    vi.spyOn(apiClient.auth, 'getMe').mockResolvedValue({
+      id: 'prov-id',
+      email: 'provider@market.com',
+      name: 'Provider Pro',
+      role: 'provider',
+    });
+
+    render(
+      <AuthProvider>
+        <NavigationBar />
+      </AuthProvider>
+    );
+
+    const toggleBtn = await screen.findByTestId('mobile-menu-toggle');
+    await user.click(toggleBtn);
+
+    expect(screen.getByTestId('mobile-nav-menu')).toBeInTheDocument();
+    expect(screen.getByTestId('mobile-nav-provider-browse')).toBeInTheDocument();
+
+    // Press Escape key to close
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('mobile-nav-menu')).not.toBeInTheDocument();
+  });
 });

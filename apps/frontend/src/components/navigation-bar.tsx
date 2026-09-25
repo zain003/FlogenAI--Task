@@ -1,17 +1,45 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { useSocket } from '@/context/socket-context';
-import { LogOut, User as UserIcon, Shield, Radio } from 'lucide-react';
+import { LogOut, User as UserIcon, Shield, Radio, Menu, X } from 'lucide-react';
 
 export function NavigationBar() {
   const { user, isAuthenticated, logout } = useAuth();
   const { isConnected } = useSocket();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLElement>(null);
+
+  // Close mobile menu on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+      }
+    };
+    if (mobileMenuOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMenuOpen]);
+
+  // Close mobile menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    if (mobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[#1f293d] bg-[#111827]/90 backdrop-blur-md">
+    <header ref={menuRef} className="sticky top-0 z-50 w-full border-b border-[#1f293d] bg-[#111827]/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand / Logo */}
         <div className="flex items-center space-x-3">
@@ -31,7 +59,7 @@ export function NavigationBar() {
           </span>
         </div>
 
-        {/* Dynamic Navigation Links */}
+        {/* Dynamic Navigation Links (Desktop) */}
         {isAuthenticated && (
           <nav className="hidden items-center space-x-5 sm:flex">
             {user?.role === 'customer' && (
@@ -56,7 +84,7 @@ export function NavigationBar() {
         )}
 
         {/* Live Status & User Area */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3 sm:space-x-4">
           {/* Socket.IO Connection Pill Indicator */}
           <div
             data-testid="live-sync-indicator"
@@ -106,7 +134,7 @@ export function NavigationBar() {
                 className="flex items-center space-x-1.5 rounded-md border border-gray-700 bg-gray-800/80 px-3 py-1.5 text-xs font-medium text-gray-200 transition hover:border-rose-500/50 hover:bg-rose-500/10 hover:text-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                <span>Logout</span>
+                <span className="hidden xs:inline">Logout</span>
               </button>
             </div>
           ) : (
@@ -127,8 +155,58 @@ export function NavigationBar() {
               </Link>
             </div>
           )}
+
+          {/* Mobile Menu Hamburger Button */}
+          {isAuthenticated && (
+            <button
+              type="button"
+              data-testid="mobile-menu-toggle"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-700 bg-gray-800/80 text-gray-300 transition hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:hidden"
+            >
+              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Mobile Navigation Drawer */}
+      {isAuthenticated && mobileMenuOpen && (
+        <div
+          data-testid="mobile-nav-menu"
+          className="border-t border-[#1f293d] bg-[#111827] px-4 py-3 sm:hidden"
+        >
+          <div className="flex flex-col space-y-2">
+            {user?.role === 'customer' && (
+              <Link
+                href="/customer/requests"
+                data-testid="mobile-nav-customer-requests"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800 hover:text-indigo-400"
+              >
+                My Requests
+              </Link>
+            )}
+            {user?.role === 'provider' && (
+              <Link
+                href="/provider/browse"
+                data-testid="mobile-nav-provider-browse"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800 hover:text-emerald-400"
+              >
+                Browse Marketplace
+              </Link>
+            )}
+            <div className="border-t border-gray-800 pt-2">
+              <div className="px-3 py-1 text-xs text-gray-400">
+                Signed in as <span className="font-semibold text-gray-200">{user?.name || user?.email}</span> ({user?.role})
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

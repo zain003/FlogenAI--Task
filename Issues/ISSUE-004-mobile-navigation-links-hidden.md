@@ -45,15 +45,21 @@ Navigation / Usability / Responsive Design
 - **Out of Scope:** Desktop header redesign.
 
 ## Acceptance Criteria
-- [ ] At viewports < 640px, a mobile navigation toggle button is rendered.
-- [ ] Clicking the toggle displays accessible links to "My Requests" (for Customer) or "Browse Marketplace" (for Provider).
-- [ ] Mobile menu can be closed with click-outside, Esc key, or close button.
+- [x] At viewports < 640px, a mobile navigation toggle button is rendered.
+- [x] Clicking the toggle displays accessible links to "My Requests" (for Customer) or "Browse Marketplace" (for Provider).
+- [x] Mobile menu can be closed with click-outside, Esc key, or close button.
 
 ## Related Feature/Ticket ID
 `FEAT-001-FE`, `FEAT-002-FE`
 
 ## Status
-Open
+Verified Fixed
+
+## Resolution Details
+- Added responsive mobile navigation toggle button (`data-testid="mobile-menu-toggle"`) with dynamic `Menu`/`X` state in `apps/frontend/src/components/navigation-bar.tsx`.
+- Implemented dropdown/drawer menu (`data-testid="mobile-nav-menu"`) rendering role-specific navigation links (`mobile-nav-customer-requests` and `mobile-nav-provider-browse`) on viewports under 640px.
+- Integrated keyboard `Escape` dismissal listener and click-outside handling.
+- Automated unit and integration tests added to `apps/frontend/src/tests/navigation-bar.spec.tsx` verifying toggle opening, role-specific link rendering, and dismissal behaviors (all 6 navigation tests passing).
 
 ## Notes
-Reported during the responsive navigation audit at the 375px breakpoint.
+Reported during the responsive navigation audit at the 375px breakpoint. Verified fixed with 100% test pass rate.
