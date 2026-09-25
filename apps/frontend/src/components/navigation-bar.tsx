@@ -29,6 +29,30 @@ export function NavigationBar() {
           </span>
         </div>
 
+        {/* Dynamic Navigation Links */}
+        {isAuthenticated && (
+          <nav className="hidden items-center space-x-5 sm:flex">
+            {user?.role === 'customer' && (
+              <Link
+                href="/customer/requests"
+                data-testid="nav-customer-requests"
+                className="text-xs font-medium text-gray-300 transition hover:text-indigo-400"
+              >
+                My Requests
+              </Link>
+            )}
+            {user?.role === 'provider' && (
+              <Link
+                href="/provider/browse"
+                data-testid="nav-provider-browse"
+                className="text-xs font-medium text-gray-300 transition hover:text-emerald-400"
+              >
+                Browse Marketplace
+              </Link>
+            )}
+          </nav>
+        )}
+
         {/* Live Status & User Area */}
         <div className="flex items-center space-x-4">
           {/* Socket.IO Connection Pill Indicator */}

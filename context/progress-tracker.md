@@ -8,14 +8,14 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-002-FE-requests` (Request Creation Form & Marketplace Feeds UI).
+- Begin execution of `FEAT-002-INT-requests-realtime.md` (Socket.IO `request:created` Real-time Broadcast).
 
 ## Feature Implementation Pipeline
 
 | Feature ID | Feature Name | Layer | Status | Test Report |
 | :--- | :--- | :--- | :--- | :--- |
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
-| **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Next), INT, VERIFY | In Progress | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
+| **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Next), VERIFY | In Progress | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
 | **FEAT-003** | Offers & Concurrency Protection | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-003-test-report.md` |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
@@ -34,14 +34,22 @@ Update this file after every meaningful implementation change and test report co
 - **Frontend Framework Upgrade**: Upgraded frontend monorepo workspace to Next.js 16 (`^16.3.6`) with Turbopack and React 19. All 19 Fake DOM tests pass cleanly and `next build` static route compilation verified. Next.js 16 established as the mandatory standard for all current and future frontend features.
 - **`FEAT-001-VERIFY-auth.md`**: Completed 100% formal SQA verification pass. Verified all 7 acceptance criteria across API and UI layers, completed nonfunctional audits for Rate Limiting (HTTP 429 when exceeding 10 login attempts in 60s), Secret Hygiene (strict zero-fallback enforcement of `JWT_SECRET` in `JwtModule` and `JwtStrategy`, plus root and backend `.env.example` templates), and Form Accessibility (`<label htmlFor>`, focus outlines, aria roles). Test suite expanded to 48/48 passing tests (29 Backend + 19 Frontend) with zero compiler or linter errors. Full test report updated in [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md).
 - **`FEAT-002-BE-requests.md`**: Service Requests REST CRUD backend module implemented with NestJS, Mongoose `service_requests` schema with compound index on `(status, customerId)` and single indexes on `status`, `customerId`, `createdAt`, `CreateRequestDto` (title 3-100, description 10-2000, budget >= 1), `GetRequestsQueryDto` (capped pagination: default 20, max 50), `RequestsService` with `create`, `findAll`, `findByCustomer`, `findById`, `RequestsController` with `@UseGuards(JwtAuthGuard, RolesGuard)`, `@Roles('customer')`, route order protection (`/api/requests/my-requests` before `/api/requests/:id`), and 21 passing automated tests (11 API controller tests + 10 service unit tests). Full test report updated in [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md).
+- **`FEAT-002-FE-requests.md`**: Service Requests UI & Feeds implemented in Next.js 16 (App Router + Turbopack + React 19).
+  - Built `CreateRequestForm` with client-side validation (title 3-100 chars, description 10-2000 chars, positive budget > 0), loading states, accessible labels/aria attributes, and immediate list appending callback.
+  - Built `RequestCard` and `RequestStatusBadge` with strict color tokens (`OPEN`/`PAID` in emerald, `ACCEPTED` in amber, `COMPLETED` in cyan, `CANCELLED` in rose), monospace USD currency formatting (`$XX.XX`), clamped text, relative dates, and navigation links.
+  - Built Customer Dashboard (`/customer/requests`) with dual-pane layout, fetching `/api/requests/my-requests`, manual refresh trigger, and empty state card when no requests exist.
+  - Built Provider Marketplace Browse page (`/provider/browse`) fetching open requests (`/api/requests?status=OPEN`) with active job counter and empty state card.
+  - Built Request Detail page (`/requests/[id]`) rendering full title, scope/description, metadata, USD budget callout, 404 error boundary, and offer room placeholder for incoming bids (`FEAT-003-FE`).
+  - Added role-based navigation links to `NavigationBar` for Customer and Provider journeys.
+  - Authored 10 comprehensive Fake DOM tests in `requests.spec.tsx`, expanding frontend test suite to 29/29 passing tests (79 total across monorepo), 0 compiler errors, and verified clean Next.js 16 production build.
 
 ## In Progress
 
-- Pre-flight preparation for `FEAT-002-FE-requests`.
+- Pre-flight preparation for `FEAT-002-INT-requests-realtime.md`.
 
 ## Next Up
 
-- `FEAT-002-FE-requests.md` (Request Creation Form & Marketplace Feeds UI).
+- `FEAT-002-INT-requests-realtime.md` (Socket.IO `request:created` Real-Time Broadcast & Redis Pub/Sub sync).
 
 ## Open Questions & Assumptions
 

@@ -31,6 +31,72 @@ export interface UserEntity {
   updatedAt?: string;
 }
 
+export type RequestStatus = 'OPEN' | 'ACCEPTED' | 'PAID' | 'COMPLETED' | 'CANCELLED';
+
+export interface ServiceRequestEntity {
+  id: string;
+  title: string;
+  description: string;
+  budget: number;
+  status: RequestStatus;
+  customerId: string;
+  acceptedOfferId?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateRequestDto {
+  title: string;
+  description: string;
+  budget: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface GetRequestsQuery {
+  page?: number;
+  limit?: number;
+  status?: RequestStatus;
+}
+
+export function formatCurrency(amount: number): string {
+  if (typeof amount !== 'number' || isNaN(amount)) return '$0.00';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+export function formatRelativeDate(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return dateString;
+  }
+}
+
 export interface ApiErrorResponse {
   statusCode: number;
   message: string;
@@ -151,6 +217,42 @@ class ApiClient {
       return this.request<UserEntity>('/api/auth/me', {
         method: 'GET',
         headers,
+      });
+    },
+  };
+
+  public requests = {
+    create: (dto: CreateRequestDto): Promise<ServiceRequestEntity> => {
+      return this.request<ServiceRequestEntity>('/api/requests', {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      });
+    },
+
+    getMyRequests: (params?: { page?: number; limit?: number }): Promise<PaginatedResponse<ServiceRequestEntity>> => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+      return this.request<PaginatedResponse<ServiceRequestEntity>>(`/api/requests/my-requests${query}`, {
+        method: 'GET',
+      });
+    },
+
+    getAll: (params?: GetRequestsQuery): Promise<PaginatedResponse<ServiceRequestEntity>> => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.status) searchParams.set('status', params.status);
+      const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+      return this.request<PaginatedResponse<ServiceRequestEntity>>(`/api/requests${query}`, {
+        method: 'GET',
+      });
+    },
+
+    getById: (id: string): Promise<ServiceRequestEntity> => {
+      return this.request<ServiceRequestEntity>(`/api/requests/${id}`, {
+        method: 'GET',
       });
     },
   };
