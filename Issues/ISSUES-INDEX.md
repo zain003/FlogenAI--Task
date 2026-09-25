@@ -8,7 +8,7 @@ This index summarizes all findings identified during the QA audit executed from 
 
 | Total Issues | Critical | High | Medium | Low | Open | Verified Fixed |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **10** | **0** | **3** | **4** | **3** | **2** | **8** |
+| **10** | **0** | **3** | **4** | **3** | **1** | **9** |
 
 - **Critical Invariants Verified Safe:**
   - **Distributed Concurrency:** 10 parallel acceptance race conditions verified with 0 double-acceptances (Tier 1 Redis mutex + Tier 2 MongoDB atomic mutation).
@@ -47,7 +47,7 @@ This index summarizes all findings identified during the QA audit executed from 
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **ISSUE-006** | Discrepancy Between Frontend and Backend Minimum Budget Threshold | Forms / Consistency | `CreateRequestForm` vs `CreateRequestDto` | Verified Fixed | [`ISSUE-006-fractional-budget-validation-discrepancy.md`](./ISSUE-006-fractional-budget-validation-discrepancy.md) |
 | **ISSUE-007** | Silent Session Eviction Without User Notification on Expired JWT | Auth / Usability | `AuthProvider` (`initializeAuth`) | Verified Fixed | [`ISSUE-007-silent-expired-session-eviction.md`](./ISSUE-007-silent-expired-session-eviction.md) |
-| **ISSUE-009** | Discrepancy Between Offer Submission Modal and Backend Minimum Price Threshold | Forms / Consistency | `SubmitOfferDialog` vs `CreateOfferDto` | **Open** | [`ISSUE-009-fractional-offer-price-validation-discrepancy.md`](./ISSUE-009-fractional-offer-price-validation-discrepancy.md) |
+| **ISSUE-009** | Discrepancy Between Offer Submission Modal and Backend Minimum Price Threshold | Forms / Consistency | `SubmitOfferDialog` vs `CreateOfferDto` | Verified Fixed | [`ISSUE-009-fractional-offer-price-validation-discrepancy.md`](./ISSUE-009-fractional-offer-price-validation-discrepancy.md) |
 
 ---
 

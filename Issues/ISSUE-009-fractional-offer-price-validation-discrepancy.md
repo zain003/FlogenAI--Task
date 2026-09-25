@@ -49,15 +49,25 @@ Forms / Validation Consistency
 - **Out of Scope:** Schema changes.
 
 ## Acceptance Criteria
-- [ ] `SubmitOfferDialog` rejects prices under $1.00 client-side before sending an API request.
-- [ ] Error message clearly instructs: "Please enter a valid price of at least $1.00".
-- [ ] All frontend component tests pass 100%.
+- [x] `SubmitOfferDialog` rejects prices under $1.00 client-side before sending an API request.
+- [x] Error message clearly instructs: "Please enter a valid price of at least $1.00".
+- [x] All frontend component tests pass 100%.
 
 ## Related Feature/Ticket ID
 `FEAT-003-BE`, `FEAT-003-FE`
 
 ## Status
-Open
+**Verified Fixed** (2026-09-26)
+
+## Resolution Details
+1. **SubmitOfferDialog Validation (`apps/frontend/src/components/offers/submit-offer-dialog.tsx`):**
+   - Updated client-side validation logic: `if (!price || isNaN(parsedPrice) || parsedPrice < 1)` setting error message to `'Please enter a valid price of at least $1.00'`.
+   - Updated price `<input>` element with `min="1.00"`.
+2. **Component Tests (`apps/frontend/src/tests/offers.spec.tsx`):**
+   - Updated test #2 to assert rejection of empty, negative, and fractional sub-dollar values (`0.50`), ensuring API call is aborted with the new `$1.00` error message.
+3. **Verification:**
+   - 73/73 frontend UI tests pass.
+   - Frontend TypeScript typechecking passed with 0 errors.
 
 ## Notes
 Direct parallel to `ISSUE-006` (which resolved the budget threshold discrepancy in `CreateRequestForm`).

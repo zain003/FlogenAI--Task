@@ -130,8 +130,8 @@ describe('FEAT-003-FE: Offers UI & Customer Acceptance Flow', () => {
     });
   });
 
-  // 2. should validate offer price is greater than 0 before submission
-  it('should validate offer price is greater than 0 before submission', async () => {
+  // 2. should validate offer price is at least $1.00 before submission
+  it('should validate offer price is at least $1.00 before submission', async () => {
     const user = userEvent.setup();
     const handleSuccess = vi.fn();
     const createOfferSpy = vi.spyOn(apiClient.offers, 'create');
@@ -156,7 +156,7 @@ describe('FEAT-003-FE: Offers UI & Customer Acceptance Flow', () => {
     await user.click(submitBtn);
 
     expect(
-      screen.getByText(/Please enter a valid price greater than \$0.00/i),
+      screen.getByText(/Please enter a valid price of at least \$1.00/i),
     ).toBeDefined();
     expect(createOfferSpy).not.toHaveBeenCalled();
 
@@ -165,7 +165,17 @@ describe('FEAT-003-FE: Offers UI & Customer Acceptance Flow', () => {
     await user.click(submitBtn);
 
     expect(
-      screen.getByText(/Please enter a valid price greater than \$0.00/i),
+      screen.getByText(/Please enter a valid price of at least \$1.00/i),
+    ).toBeDefined();
+    expect(createOfferSpy).not.toHaveBeenCalled();
+
+    // Submit with sub-dollar price (< 1.00)
+    await user.clear(priceInput);
+    await user.type(priceInput, '0.50');
+    await user.click(submitBtn);
+
+    expect(
+      screen.getByText(/Please enter a valid price of at least \$1.00/i),
     ).toBeDefined();
     expect(createOfferSpy).not.toHaveBeenCalled();
   });

@@ -76,8 +76,8 @@ export function SubmitOfferDialog({
     const errors: { price?: string; message?: string } = {};
     const parsedPrice = parseFloat(price);
 
-    if (!price || isNaN(parsedPrice) || parsedPrice <= 0) {
-      errors.price = 'Please enter a valid price greater than $0.00';
+    if (!price || isNaN(parsedPrice) || parsedPrice < 1) {
+      errors.price = 'Please enter a valid price of at least $1.00';
     }
 
     if (!message || message.trim().length < 5) {
@@ -197,7 +197,7 @@ export function SubmitOfferDialog({
                 name="price"
                 type="number"
                 step="0.01"
-                min="1"
+                min="1.00"
                 placeholder="250.00"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
