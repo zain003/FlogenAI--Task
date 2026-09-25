@@ -15,7 +15,7 @@ This index tracks all feature specifications, dependencies, implementation statu
 | **FEAT-002-FE** | Frontend | P0 | Request Creation & Feeds | `FEAT-002-BE` | ~120 | ☑ Passed | - |
 | **FEAT-002-INT** | Integration| P0 | Socket.IO `request:created` Broadcast | `FEAT-002-BE` | ~110 | ☑ Passed | - |
 | **FEAT-002-VERIFY** | Verify | P0 | Requests SQA Verification Pass | `FEAT-002-BE`, `FEAT-002-FE`, `FEAT-002-INT` | ~80 | ☑ Passed | [`feature-test-reports/FEAT-002-test-report.md`](../../feature-test-reports/FEAT-002-test-report.md) |
-| **FEAT-003-BE** | Backend | P0 | Offers & Concurrency Lock | `FEAT-002-VERIFY` | ~140 | ☐ Not Started | - |
+| **FEAT-003-BE** | Backend | P0 | Offers & Concurrency Lock | `FEAT-002-VERIFY` | ~140 | ☑ Passed | - |
 | **FEAT-003-FE** | Frontend | P0 | Offer Submission & Accept UI | `FEAT-003-BE` | ~115 | ☐ Not Started | - |
 | **FEAT-003-INT** | Integration| P0 | Real-Time Offer Events & Updates | `FEAT-003-BE` | ~110 | ☐ Not Started | - |
 | **FEAT-003-VERIFY** | Verify | P0 | Offers & Race Condition Verification | `FEAT-003-BE`, `FEAT-003-FE`, `FEAT-003-INT` | ~85 | ☐ Not Started | `feature-test-reports/FEAT-003-test-report.md` |

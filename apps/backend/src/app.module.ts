@@ -5,6 +5,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './modules/auth/auth.module';
 import { RequestsModule } from './modules/requests/requests.module';
+import { OffersModule } from './modules/offers/offers.module';
+import { RedisModule } from './modules/redis/redis.module';
 import { SocketModule } from './modules/socket/socket.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -31,8 +33,10 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
         limit: 60, // default global limit; auth login throttled tighter
       },
     ]),
+    RedisModule,
     AuthModule,
     RequestsModule,
+    OffersModule,
     SocketModule,
   ],
   providers: [

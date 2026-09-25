@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change and test report co
 
 ## Current Goal
 
-- Begin execution of `FEAT-003-BE-offers.md` (Offers & Concurrency Lock Backend Module).
+- Begin execution of `FEAT-003-FE-offers.md` (Offers UI & Customer Acceptance Flow in Next.js 16).
 
 ## Feature Implementation Pipeline
 
@@ -16,7 +16,7 @@ Update this file after every meaningful implementation change and test report co
 | :--- | :--- | :--- | :--- | :--- |
 | **FEAT-001** | User Auth & Roles (JWT, bcrypt, RBAC) | BE (Passed), FE (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md) |
 | **FEAT-002** | Service Requests & Feed (CRUD + Socket) | BE (Passed), FE (Passed), INT (Passed), VERIFY (Passed) | Passed | [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md) |
-| **FEAT-003** | Offers & Concurrency Protection | BE (Next), FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-003-test-report.md` |
+| **FEAT-003** | Offers & Concurrency Protection | BE (Passed), FE (Next), INT, VERIFY | In Progress | `feature-test-reports/FEAT-003-test-report.md` |
 | **FEAT-004** | Stripe Payments & Webhook Idempotency | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-004-test-report.md` |
 | **FEAT-005** | Real-Time Authorized Chat | BE, FE, INT, VERIFY | Not Started | `feature-test-reports/FEAT-005-test-report.md` |
 | **FEAT-006** | Multi-Instance Scaling & Docker Compose | INT, VERIFY | Not Started | `feature-test-reports/FEAT-006-test-report.md` |
@@ -55,14 +55,39 @@ Update this file after every meaningful implementation change and test report co
   - Completed nonfunctional audits for broadcast latency (< 200ms), schema compound index `{ status: 1, customerId: 1 }` and single-field indexes (`customerId`, `status`, `createdAt`), and in-memory fallback resilience on Redis disconnection.
   - Confirmed multi-layer test suite pass rate of 100% with 91/91 tests passing (59 backend + 32 frontend) and zero failures across Jest and Vitest.
   - Generated and committed formal SQA Test Report in [`feature-test-reports/FEAT-002-test-report.md`](../feature-test-reports/FEAT-002-test-report.md).
+- **`FEAT-003-BE-offers.md`**: Offers & Concurrency-Guarded Acceptance backend module implemented.
+  - **Redis Distributed Locking Module**: Implemented `RedisModule` with `RedisService` (graceful connection, error resilience, fallback detection) and `DistributedLockService` providing mutex acquisition via `SET key token NX PX 10000` with unique UUID token and atomic Lua script release (`if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end`) with in-memory lock table fallback.
+  - **Offer Schema**: Defined Mongoose `offers` schema with compound index on `(requestId, status)`, single-field indexes on `providerId`, `requestId`, and `createdAt`, status enum (`PENDING`, `ACCEPTED`, `REJECTED`), and positive price validation.
+  - **DTO Contracts**: Created `CreateOfferDto` (price > 0, message 5-1000 chars) and `GetOffersQueryDto` (capped pagination: default 20, max 50).
+  - **Two-Tier Concurrency Protection**: Implemented `OffersService.acceptOffer`:
+    1. Tier 1: Acquires Redis distributed lock `mkt:lock:request:<requestId>` with 10s TTL. Rejects concurrent acquisition with HTTP 409 Conflict.
+    2. Verifies customer ownership against authenticated user ID (`request.customerId === customerId`). Rejects non-owners with HTTP 403 Forbidden.
+    3. Verifies request status is `OPEN`.
+    4. Tier 2: Executes atomic MongoDB conditional update `findOneAndUpdate({ _id: requestId, status: 'OPEN' }, { $set: { status: 'ACCEPTED', acceptedOfferId: offerId } })`. If null returned (race lost or already accepted), rejects with HTTP 409 Conflict.
+    5. Transitions winning offer status to `ACCEPTED`.
+    6. Atomically marks all peer offers on the request as `REJECTED`.
+    7. Releases Redis lock in `finally` block via atomic Lua script.
+  - **REST API Routes**: Implemented `OffersController` with `@UseGuards(JwtAuthGuard, RolesGuard)` and `@Roles`:
+    - `POST /api/requests/:id/offers` (Provider role) -> HTTP 201
+    - `GET /api/requests/:id/offers` (Paginated list) -> HTTP 200
+    - `POST /api/offers/:id/accept` (Customer role) -> HTTP 200
+    - `GET /api/offers/:id` -> HTTP 200
+  - **Multi-Layer SQA Test Suite**: Added 44 new automated tests:
+    - 10 Unit tests in `distributed-lock.service.spec.ts` (acquiring, lock collision, token verification, TTL expiration, Lua script release).
+    - 14 Domain unit tests in `offers.service.spec.ts` (creation, pricing, non-owner rejection, closed request rejection, lock release on errors).
+    - 17 API contract tests in `offers.controller.spec.ts` (route guards, RBAC 403, unauthenticated 401, validation 400, conflict 409).
+    - 3 Concurrency race condition tests in `offers-concurrency.spec.ts` (simultaneous 2-way and 5-way parallel requests hitting exact same millisecond with zero double-acceptances, and Tier 2 fallback defense test).
+  - Monorepo test suite expanded to 135/135 passing tests (103 backend + 32 frontend) with 100% pass rate and zero compiler or linter errors.
 
 ## In Progress
 
-- Pre-flight preparation for `FEAT-003-BE-offers.md`.
+- `FEAT-003-FE-offers.md` (Offers UI & Customer Acceptance Flow in Next.js 16).
 
 ## Next Up
 
-- `FEAT-003-BE-offers.md` (Offers & Concurrency Protection Backend Module).
+- `FEAT-003-FE-offers.md` (Offers UI & Customer Acceptance Flow in Next.js 16).
+- `FEAT-003-INT-offers-realtime.md` (Real-Time Offer Events & Acceptance Broadcast).
+- `FEAT-003-VERIFY-offers.md` (Offers SQA Verification Pass).
 
 ## Open Questions & Assumptions
 
