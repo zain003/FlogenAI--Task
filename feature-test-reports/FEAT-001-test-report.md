@@ -12,9 +12,9 @@
 
 | Total Test Cases | Passed | Failed | Skipped | Pass Rate | SQA Verdict |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `47` | `47` | `0` | `0` | `100%` | **PASSED** |
+| `48` | `48` | `0` | `0` | `100%` | **PASSED** |
 
-> **SQA Gate Policy:** Zero failing tests allowed. All 47 multi-layer test cases (28 Backend Jest tests + 19 Frontend Fake DOM Vitest tests) passed with 100% pass rate.
+> **SQA Gate Policy:** Zero failing tests allowed. All 48 multi-layer test cases (29 Backend Jest tests + 19 Frontend Fake DOM Vitest tests) passed with 100% pass rate.
 
 ---
 
@@ -49,6 +49,9 @@
 | **AC-14** | Logging out clears JWT from localStorage and redirects to `/login` | `apps/frontend/src/tests/auth-context.spec.tsx` > `should clear token and redirect to /login upon logout` | `PASS` |
 | **AC-15** | Expired/malformed token in localStorage triggers clean cache invalidation and reset to logged-out state | `apps/frontend/src/tests/auth-context.spec.tsx` > `should clear token and reset state when stored token is expired or invalid` | `PASS` |
 | **AC-16** | NavigationBar displays live sync status, user role pill, email, and logout action dynamically | `apps/frontend/src/tests/navigation-bar.spec.tsx` > `should render customer role badge, email, and logout button when authenticated as customer` | `PASS` |
+| **AC-17** | Rate Limiting: Exceeding 10 login attempts in 60 seconds returns HTTP 429 Too Many Requests | `apps/backend/src/modules/auth/auth.controller.spec.ts` > `POST /api/auth/login - should reject requests with HTTP 429 when exceeding 10 login attempts in 60 seconds` | `PASS` |
+| **AC-18** | Secret Hygiene: `JWT_SECRET` loaded strictly from environment with zero fallback strings | `apps/backend/src/modules/auth/auth.module.ts` & `apps/backend/src/modules/auth/strategies/jwt.strategy.ts` | `PASS` |
+| **AC-19** | Accessibility & Focus: Inputs feature explicit `<label htmlFor>`, aria alert roles, and keyboard focus outlines | `apps/frontend/src/components/auth/login-form.tsx` & `apps/frontend/src/components/auth/register-form.tsx` | `PASS` |
 
 ---
 
@@ -87,31 +90,33 @@
 - [x] **Happy Path:** Valid registration and login payloads return expected status codes (`201` and `200`) and standard `AuthResponseDto`.
 - [x] **Validation / 400 Bad Request:** Missing fields, malformed emails, and passwords under 8 characters return structured validation errors.
 - [x] **Authentication / 401 & 403:** Missing token on `/api/auth/me` returns 401; mismatched role on protected endpoints returns 403.
-- [x] **Conflict / 409:** Duplicate email addresses correctly yield HTTP 409 Conflict.
+- [x] **Rate Limiting / 429:** Exceeding 10 login requests within 60 seconds returns HTTP 429 Too Many Requests.
 
 *Execution Log (`npm run test:api --workspace=apps/backend`):*
 ```bash
-PASS src/modules/auth/auth.controller.spec.ts (5.067 s)
+PASS src/modules/auth/auth.controller.spec.ts
   AuthController (API Layer Contract Tests)
     POST /api/auth/register
-      √ should register a new customer and return JWT with HTTP 201 (78 ms)
-      √ should reject registration with duplicate email with HTTP 409 Conflict (12 ms)
-      √ should reject registration with invalid email or weak password with HTTP 400 (9 ms)
-      √ should reject registration with empty body with HTTP 400 (7 ms)
+      √ should register a new customer and return JWT with HTTP 201 (49 ms)
+      √ should reject registration with duplicate email with HTTP 409 Conflict (7 ms)
+      √ should reject registration with invalid email or weak password with HTTP 400 (6 ms)
+      √ should reject registration with empty body with HTTP 400 (4 ms)
     POST /api/auth/login
-      √ should authenticate valid credentials and return signed JWT with HTTP 200 (7 ms)
-      √ should reject login with wrong password with HTTP 401 Unauthorized (7 ms)
-      √ should reject login with malformed email with HTTP 400 Bad Request (6 ms)
+      √ should authenticate valid credentials and return signed JWT with HTTP 200 (5 ms)
+      √ should reject login with wrong password with HTTP 401 Unauthorized (4 ms)
+      √ should reject login with malformed email with HTTP 400 Bad Request (3 ms)
+      √ should reject requests with HTTP 429 when exceeding 10 login attempts in 60 seconds (20 ms)
     GET /api/auth/me
-      √ should reject access with HTTP 401 without Authorization header (7 ms)
-      √ should allow access to protected route when valid JWT is supplied (7 ms)
+      √ should reject access with HTTP 401 without Authorization header (3 ms)
+      √ should allow access to protected route when valid JWT is supplied (3 ms)
     RBAC Route Protection
-      √ should allow access to customer-protected route when role is customer (6 ms)
-      √ should reject access with HTTP 403 when user role does not match required @Roles() (6 ms)
+      √ should allow access to customer-protected route when role is customer (2 ms)
+      √ should reject access with HTTP 403 when user role does not match required @Roles() (3 ms)
 
 Test Suites: 1 passed, 1 total
-Tests:       11 passed, 11 total
-Time:        5.361 s
+Tests:       12 passed, 12 total
+Snapshots:   0 total
+Time:        4.934 s
 ```
 
 ---
@@ -178,12 +183,13 @@ Time:        4.12 s
 | :--- | :--- | :--- | :--- | :--- |
 | `BUG-01` | Duplicate Mongoose schema index warning in console | Both `@Prop({ unique: true })` and `UserSchema.index({ email: 1 }, { unique: true })` were defined | Removed redundant explicit `UserSchema.index` call | `VERIFIED FIXED` |
 | `BUG-02` | Multiple element match on `getByRole('button', { name: /customer/i })` in register test | Both the role toggle button and the submit button ("Register as Customer") matched the regex | Targeted role toggle via test ID `role-customer-btn` | `VERIFIED FIXED` |
+| `BUG-03` | Fallback string in `auth.module.ts` violated secret hygiene audit | Hardcoded fallback `'super-secret-jwt-key-for-marketplace-testing'` present in JwtModule factory | Removed fallback; strictly throws error if `JWT_SECRET` is unset; created `.env.example` templates | `VERIFIED FIXED` |
 
 ---
 
 ## 7. SQA Sign-Off & Recommendation
 
-- [x] **100% Test Pass Rate Achieved (47/47 tests passed across BE and FE)**
+- [x] **100% Test Pass Rate Achieved (48/48 tests passed across BE and FE)**
 - [x] **Zero Unresolved Defects**
 - [x] **TypeScript Compilation Clean (`tsc --noEmit` passed on backend and frontend)**
 - [x] **Next.js Production Build Succeeded (`next build` generated static routes cleanly)**

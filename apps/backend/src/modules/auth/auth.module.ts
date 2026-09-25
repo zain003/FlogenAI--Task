@@ -18,18 +18,22 @@ import { RolesGuard } from './guards/roles.guard';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_SECRET') ||
-          process.env.JWT_SECRET ||
-          'super-secret-jwt-key-for-marketplace-testing',
-        signOptions: {
-          expiresIn:
-            (configService.get<string>('JWT_EXPIRATION') as any) ||
-            process.env.JWT_EXPIRATION ||
-            '1d',
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret =
+          configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+        if (!secret) {
+          throw new Error('JWT_SECRET environment variable is required');
+        }
+        return {
+          secret,
+          signOptions: {
+            expiresIn:
+              (configService.get<string>('JWT_EXPIRATION') as any) ||
+              process.env.JWT_EXPIRATION ||
+              '1d',
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

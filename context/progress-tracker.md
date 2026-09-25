@@ -30,7 +30,8 @@ Update this file after every meaningful implementation change and test report co
 - Creation of `000-shared-contracts.md`, `000-nonfunctional-contracts.md`, and `000-infra-contracts.md`.
 - Complete feature specs authored in `context/feature-specs/` matching `plan.md`.
 - **`FEAT-001-BE-auth.md`**: User Authentication & RBAC backend module implemented with NestJS, bcrypt (10 rounds), JWT strategies, `User` Mongoose schema with unique indexes, `RegisterDto`, `LoginDto`, `JwtAuthGuard`, `RolesGuard`, `HttpExceptionFilter`, and 28 passing unit/API automated tests. Verified with test report [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md).
-- **`FEAT-001-FE-auth.md`**: Authentication UI & Session Handling implemented with Next.js (App Router, React 19), Tailwind CSS design tokens adhering to `context/ui-context.md`, `api-client.ts`, `AuthContext` with automatic localStorage token hydration and clean invalidation, accessible `LoginForm`, `RegisterForm` with Customer/Provider role toggle, dynamic `NavigationBar` with role badges and live sync indicator, and 19 passing Fake DOM automated tests (Vitest + React Testing Library). Combined FEAT-001 test count: 47/47 passing (100%).
+- **`FEAT-001-FE-auth.md`**: Authentication UI & Session Handling implemented with Next.js (App Router, React 19), Tailwind CSS design tokens adhering to `context/ui-context.md`, `api-client.ts`, `AuthContext` with automatic localStorage token hydration and clean invalidation, accessible `LoginForm`, `RegisterForm` with Customer/Provider role toggle, dynamic `NavigationBar` with role badges and live sync indicator, and 19 passing Fake DOM automated tests (Vitest + React Testing Library).
+- **`FEAT-001-VERIFY-auth.md`**: Completed 100% formal SQA verification pass. Verified all 7 acceptance criteria across API and UI layers, completed nonfunctional audits for Rate Limiting (HTTP 429 when exceeding 10 login attempts in 60s), Secret Hygiene (strict zero-fallback enforcement of `JWT_SECRET` in `JwtModule` and `JwtStrategy`, plus root and backend `.env.example` templates), and Form Accessibility (`<label htmlFor>`, focus outlines, aria roles). Test suite expanded to 48/48 passing tests (29 Backend + 19 Frontend) with zero compiler or linter errors. Full test report updated in [`feature-test-reports/FEAT-001-test-report.md`](../feature-test-reports/FEAT-001-test-report.md).
 
 ## In Progress
 
@@ -53,8 +54,9 @@ Update this file after every meaningful implementation change and test report co
 
 ## Session Notes
 
-- `FEAT-001-BE` achieved 100% test pass rate with 0 failing and 0 skipped tests (28 tests).
+- `FEAT-001-BE` achieved 100% test pass rate with 0 failing and 0 skipped tests (29 tests including rate limiting).
 - `FEAT-001-FE` achieved 100% test pass rate with 0 failing and 0 skipped tests (19 tests).
-- All 47 tests across backend and frontend pass cleanly with zero compiler/linter warnings.
+- `FEAT-001-VERIFY` achieved 100% pass rate across all 48 tests (29 BE + 19 FE).
+- Secret hygiene audit resolved defect `BUG-03` by eliminating hardcoded fallback strings for `JWT_SECRET`.
 - Next implementation target is `FEAT-002-BE-requests`.
 

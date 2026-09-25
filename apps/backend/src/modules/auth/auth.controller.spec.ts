@@ -5,8 +5,9 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { HttpExceptionFilter } from '../../common/filters/http-exception.filter';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from './guards/roles.guard';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 describe('AuthController (API Layer Contract Tests)', () => {
   let app: INestApplication;
@@ -38,11 +39,24 @@ describe('AuthController (API Layer Contract Tests)', () => {
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [
+        ThrottlerModule.forRoot([
+          {
+            name: 'default',
+            ttl: 60000,
+            limit: 10,
+          },
+        ]),
+      ],
       controllers: [AuthController],
       providers: [
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: APP_GUARD,
+          useClass: ThrottlerGuard,
         },
       ],
     })
@@ -209,6 +223,32 @@ describe('AuthController (API Layer Contract Tests)', () => {
 
       expect(response.body.statusCode).toBe(400);
       expect(response.body.message).toBe('Validation failed');
+    });
+
+    it('should reject requests with HTTP 429 when exceeding 10 login attempts in 60 seconds', async () => {
+      mockAuthService.login.mockResolvedValue(mockAuthResponse);
+
+      // Send 7 more requests to reach the 10 limit (3 already sent in preceding tests)
+      for (let i = 0; i < 7; i++) {
+        await request(app.getHttpServer())
+          .post('/api/auth/login')
+          .send({
+            email: 'customer@test.com',
+            password: 'Password123!',
+          });
+      }
+
+      // 11th request exceeds limit and must return HTTP 429 Too Many Requests
+      const response = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({
+          email: 'customer@test.com',
+          password: 'Password123!',
+        })
+        .expect(429);
+
+      expect(response.body.statusCode).toBe(429);
+      expect(response.body.message).toContain('ThrottlerException');
     });
   });
 
