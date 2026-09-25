@@ -44,14 +44,15 @@ Security / Rate Limiting
 - **Out of Scope:** Global throttler configuration.
 
 ## Acceptance Criteria
-- [ ] Attempting more than 10 registration calls in a 60-second window returns HTTP `429 Too Many Requests`.
-- [ ] Response headers include rate limit remaining / retry-after details.
+- [x] Attempting more than 10 registration calls in a 60-second window returns HTTP `429 Too Many Requests`.
+- [x] Response headers include rate limit remaining / retry-after details.
 
 ## Related Feature/Ticket ID
 `FEAT-001-BE`, `000-nonfunctional-contracts.md`
 
 ## Status
-Open
+Verified Fixed
 
 ## Notes
-Identified during SQA audit of nonfunctional contracts and security boundaries.
+- Resolution: Decorated `POST /api/auth/register` with `@Throttle({ default: { limit: 10, ttl: 60000 } })` in `AuthController`, enforcing the 10 req/minute per IP rate limit specified in `000-nonfunctional-contracts.md`.
+- Verified with unit and API tests in `auth.controller.spec.ts` passing 100%.
