@@ -7,15 +7,21 @@ import { ApiClientError } from '@/lib/api-client';
 import { Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 
 export function LoginForm() {
-  const { login } = useAuth();
+  const { login, sessionExpired, clearSessionExpired } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const isExpired =
+    sessionExpired ||
+    (typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('reason') === 'expired');
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMessage(null);
+    if (sessionExpired) clearSessionExpired();
 
     // Client-side validation before network dispatch
     if (!email.trim()) {
@@ -62,6 +68,19 @@ export function LoginForm() {
           Sign in to access your real-time marketplace dashboard
         </p>
       </div>
+
+      {/* Session Expired Informational Alert Banner */}
+      {isExpired && !errorMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="session-expired-alert"
+          className="mb-5 flex items-start space-x-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5 text-sm text-amber-300"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <div className="flex-1 font-medium">Your session has expired. Please sign in again.</div>
+        </div>
+      )}
 
       {/* Prominent Error Alert Banner */}
       {errorMessage && (

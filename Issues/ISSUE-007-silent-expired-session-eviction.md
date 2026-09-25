@@ -47,13 +47,19 @@ Auth / Usability
 - **Out of Scope:** JWT expiration duration settings in backend.
 
 ## Acceptance Criteria
-- [ ] User receives clear feedback when an expired session token is evicted on app initialization.
+- [x] User receives clear feedback when an expired session token is evicted on app initialization.
 
 ## Related Feature/Ticket ID
 `FEAT-001-FE`
 
 ## Status
-Open
+Verified Fixed
+
+## Resolution Details
+- Extended `AuthContextType` with `sessionExpired: boolean` and `clearSessionExpired: () => void`.
+- In `AuthProvider.initializeAuth()`, when an expired or malformed token fails `apiClient.auth.getMe(storedToken)` validation, the state sets `sessionExpired: true`, resets token state, and redirects to `/login?reason=expired`.
+- In `LoginForm` (`apps/frontend/src/components/auth/login-form.tsx`), added a prominent informational alert banner (`data-testid="session-expired-alert"`) informing the user "Your session has expired. Please sign in again." when session expiration occurs or `reason=expired` is present.
+- Updated `apps/frontend/src/tests/auth-context.spec.tsx` and `apps/frontend/src/tests/login.spec.tsx` to verify token clearing, state notification, and expired banner display.
 
 ## Notes
-Observed during session lifecycle and invalidation edge-case testing.
+Observed during session lifecycle and invalidation edge-case testing. Verified fixed with 100% test pass rate.

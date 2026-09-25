@@ -139,4 +139,17 @@ describe('LoginForm (Fake DOM / Component Tests)', () => {
       expect(mockPush).toHaveBeenCalledWith('/customer/requests');
     });
   });
+
+  it('should display session expired alert banner when stale token eviction occurs (ISSUE-007)', async () => {
+    localStorage.setItem('auth_token', 'stale-token');
+    vi.spyOn(apiClient.auth, 'getMe').mockRejectedValue(
+      new ApiClientError('Unauthorized', 401)
+    );
+
+    renderWithAuth();
+
+    const expiredAlert = await screen.findByTestId('session-expired-alert');
+    expect(expiredAlert).toBeInTheDocument();
+    expect(expiredAlert).toHaveTextContent(/your session has expired\. please sign in again\./i);
+  });
 });

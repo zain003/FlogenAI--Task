@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, AuthContext } from '@/context/auth-context';
 import { RequestCard } from '@/components/requests/request-card';
@@ -30,6 +30,7 @@ export default function ProviderBrowsePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newlyArrivedId, setNewlyArrivedId] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
 
   // Client-side route protection
   useEffect(() => {
@@ -45,10 +46,6 @@ export default function ProviderBrowsePage() {
   // ─── Initial fetch ────────────────────────────────────────────────────────
 
   const fetchOpenRequests = useCallback(async (): Promise<void> => {
-    if (authContext && (!isAuthenticated || user?.role !== 'provider')) {
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
@@ -64,14 +61,16 @@ export default function ProviderBrowsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [authContext, isAuthenticated, user]);
+  }, []);
 
   useEffect(() => {
     if (authContext && (isAuthLoading || !isAuthenticated || user?.role !== 'provider')) {
       return;
     }
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     fetchOpenRequests();
-  }, [authContext, isAuthLoading, isAuthenticated, user, fetchOpenRequests]);
+  }, [authContext, isAuthLoading, isAuthenticated, user?.role, fetchOpenRequests]);
 
   // ─── Real-time listener: request:created ─────────────────────────────────
   //

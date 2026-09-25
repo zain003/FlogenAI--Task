@@ -23,6 +23,8 @@ export interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  sessionExpired: boolean;
+  clearSessionExpired: () => void;
   login: (dto: LoginDto) => Promise<AuthResponseDto>;
   register: (dto: RegisterDto) => Promise<AuthResponseDto>;
   logout: () => void;
@@ -33,14 +35,20 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setTokenState] = useState<string | null>(null);
+  const [sessionExpired, setSessionExpired] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const router = useRouter();
+
+  const clearSessionExpired = useCallback(() => {
+    setSessionExpired(false);
+  }, []);
 
   const handleAuthSuccess = useCallback(
     (response: AuthResponseDto) => {
       const { accessToken, user: authUser } = response;
       setTokenState(accessToken);
       setUser(authUser);
+      setSessionExpired(false);
       apiClient.setToken(accessToken);
 
       if (authUser.role === 'customer') {
@@ -55,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     setUser(null);
     setTokenState(null);
+    setSessionExpired(false);
     apiClient.setToken(null);
     router.push('/login');
   }, [router]);
@@ -79,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: profile.name,
             role: profile.role,
           });
+          setSessionExpired(false);
         }
       } catch {
         // Expired or malformed token in localStorage - reset storage cleanly
@@ -86,7 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isMounted) {
           setUser(null);
           setTokenState(null);
+          setSessionExpired(true);
         }
+        router.push('/login?reason=expired');
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -99,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       isMounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = useCallback(
@@ -125,11 +138,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token,
       isLoading,
       isAuthenticated: !!user && !!token,
+      sessionExpired,
+      clearSessionExpired,
       login,
       register,
       logout,
     }),
-    [user, token, isLoading, login, register, logout]
+    [user, token, isLoading, sessionExpired, clearSessionExpired, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -140,6 +155,8 @@ const defaultAuthContext: AuthContextType = {
   token: null,
   isLoading: false,
   isAuthenticated: false,
+  sessionExpired: false,
+  clearSessionExpired: () => {},
   login: async () => {
     throw new Error('useAuth must be used within an AuthProvider');
   },

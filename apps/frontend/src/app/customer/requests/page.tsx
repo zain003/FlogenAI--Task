@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, AuthContext } from '@/context/auth-context';
@@ -27,6 +27,7 @@ export default function CustomerRequestsPage() {
   const [requests, setRequests] = useState<ServiceRequestEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
 
   // Client-side route protection
   useEffect(() => {
@@ -40,10 +41,6 @@ export default function CustomerRequestsPage() {
   }, [authContext, isAuthLoading, isAuthenticated, user, router]);
 
   const fetchMyRequests = useCallback(async () => {
-    if (authContext && (!isAuthenticated || user?.role !== 'customer')) {
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
@@ -59,14 +56,16 @@ export default function CustomerRequestsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [authContext, isAuthenticated, user]);
+  }, []);
 
   useEffect(() => {
     if (authContext && (isAuthLoading || !isAuthenticated || user?.role !== 'customer')) {
       return;
     }
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     fetchMyRequests();
-  }, [authContext, isAuthLoading, isAuthenticated, user, fetchMyRequests]);
+  }, [authContext, isAuthLoading, isAuthenticated, user?.role, fetchMyRequests]);
 
   const handleRequestCreated = (newRequest: ServiceRequestEntity) => {
     setRequests((prev) => [newRequest, ...prev]);

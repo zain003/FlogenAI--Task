@@ -17,13 +17,14 @@ vi.mock('next/navigation', () => ({
 }));
 
 function ConsumerComponent() {
-  const { user, token, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, token, isAuthenticated, isLoading, sessionExpired, logout } = useAuth();
   return (
     <div>
       <div data-testid="loading-state">{isLoading ? 'loading' : 'ready'}</div>
       <div data-testid="auth-status">{isAuthenticated ? 'authenticated' : 'unauthenticated'}</div>
       <div data-testid="user-email">{user ? user.email : 'no-user'}</div>
       <div data-testid="token-val">{token || 'no-token'}</div>
+      <div data-testid="session-expired">{sessionExpired ? 'expired' : 'active'}</div>
       <button onClick={logout} data-testid="logout-btn">
         Logout
       </button>
@@ -93,7 +94,9 @@ describe('AuthContext (Session & Token Lifecycle)', () => {
       expect(screen.getByTestId('loading-state')).toHaveTextContent('ready');
       expect(screen.getByTestId('auth-status')).toHaveTextContent('unauthenticated');
       expect(screen.getByTestId('user-email')).toHaveTextContent('no-user');
+      expect(screen.getByTestId('session-expired')).toHaveTextContent('expired');
       expect(localStorage.getItem('auth_token')).toBeNull();
+      expect(mockPush).toHaveBeenCalledWith('/login?reason=expired');
     });
   });
 
