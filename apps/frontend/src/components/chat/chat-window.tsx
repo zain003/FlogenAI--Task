@@ -20,10 +20,12 @@ export interface ChatWindowProps {
   requestTitle?: string;
 }
 
+const EMPTY_MESSAGES: MessageEntity[] = [];
+
 export function ChatWindow({
   requestId,
   conversation: propConversation,
-  initialMessages = [],
+  initialMessages = EMPTY_MESSAGES,
   counterpartyName,
   requestTitle,
 }: ChatWindowProps) {
@@ -36,6 +38,7 @@ export function ChatWindow({
   const [messages, setMessages] = useState<MessageEntity[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(!propConversation && initialMessages.length === 0);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -110,7 +113,7 @@ export function ChatWindow({
     return () => {
       isMounted = false;
     };
-  }, [requestId, propConversation, initialMessages, scrollToBottom]);
+  }, [requestId, propConversation?.id, retryCount]);
 
   // Real-time Socket.IO room join and message subscription
   useEffect(() => {
@@ -234,12 +237,20 @@ export function ChatWindow({
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
-          <button
-            onClick={() => setError(null)}
-            className="hover:text-rose-200 ml-2 font-bold"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setRetryCount((c) => c + 1)}
+              className="hover:text-rose-200 underline font-medium text-xs cursor-pointer"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => setError(null)}
+              className="hover:text-rose-200 ml-2 font-bold cursor-pointer"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
 
