@@ -376,6 +376,13 @@ class ApiClient {
         method: 'GET',
       });
     },
+
+    simulateSuccess: (paymentIntentId: string): Promise<{ success: boolean; status: string }> => {
+      return this.request<{ success: boolean; status: string }>('/api/payments/simulate-success', {
+        method: 'POST',
+        body: JSON.stringify({ paymentIntentId }),
+      });
+    },
   };
 
   public conversations = {

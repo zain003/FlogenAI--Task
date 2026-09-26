@@ -54,15 +54,7 @@ export class StripeService {
       this.apiKey.includes('placeholder')
     ) {
       this.logger.log('Using simulated Stripe PaymentIntent for placeholder/test key');
-      const mockId = `pi_test_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      return {
-        id: mockId,
-        client_secret: `${mockId}_secret_test`,
-        amount,
-        currency,
-        status: 'requires_payment_method',
-        metadata,
-      } as any;
+      return this.generateMockPaymentIntent(amount, currency, metadata);
     }
 
     try {
@@ -82,18 +74,30 @@ export class StripeService {
         this.logger.warn(
           `Stripe API authentication failed; returning simulated test PaymentIntent: ${err.message}`,
         );
-        const mockId = `pi_test_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        return {
-          id: mockId,
-          client_secret: `${mockId}_secret_test`,
-          amount,
-          currency,
-          status: 'requires_payment_method',
-          metadata,
-        } as any;
+        return this.generateMockPaymentIntent(amount, currency, metadata);
       }
       throw err;
     }
+  }
+
+  private generateMockPaymentIntent(
+    amount: number,
+    currency: string,
+    metadata: Record<string, string>,
+  ): Stripe.PaymentIntent {
+    const timestamp = Date.now().toString(36);
+    const randomPart = Math.random().toString(36).substring(2, 10);
+    const mockId = `pi_${timestamp}${randomPart}`;
+    const mockSecret = `${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+
+    return {
+      id: mockId,
+      client_secret: `${mockId}_secret_${mockSecret}`,
+      amount,
+      currency,
+      status: 'requires_payment_method',
+      metadata,
+    } as any;
   }
 
   /**

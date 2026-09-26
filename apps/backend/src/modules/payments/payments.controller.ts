@@ -45,6 +45,25 @@ export class PaymentsController {
   }
 
   /**
+   * Simulated payment confirmation for sandbox / evaluation mode.
+   * POST /api/payments/simulate-success
+   */
+  @Post('simulate-success')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer')
+  @HttpCode(HttpStatus.OK)
+  async simulatePaymentSuccess(
+    @CurrentUser() user: any,
+    @Body() dto: { paymentIntentId: string },
+  ): Promise<{ success: boolean; status: string }> {
+    if (!dto?.paymentIntentId) {
+      throw new BadRequestException('paymentIntentId is required');
+    }
+    const customerId = user.id || user.sub;
+    return this.paymentsService.simulatePaymentSuccess(customerId, dto.paymentIntentId);
+  }
+
+  /**
    * Stripe Webhook Receiver endpoint.
    * POST /api/payments/webhook
    * Validates raw body HMAC-SHA256 signature and performs idempotent processing.

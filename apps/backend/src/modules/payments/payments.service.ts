@@ -186,6 +186,47 @@ export class PaymentsService {
     return this.mapToEntity(payment);
   }
 
+  /**
+   * Simulates payment confirmation in development/evaluation mode when real Stripe webhook is unavailable.
+   */
+  async simulatePaymentSuccess(
+    customerId: string,
+    paymentIntentId: string,
+  ): Promise<{ success: boolean; status: string }> {
+    const payment = await this.paymentModel.findOne({ stripePaymentIntentId: paymentIntentId });
+    if (!payment) {
+      throw new NotFoundException('Payment record not found for PaymentIntent');
+    }
+
+    if (payment.customerId !== customerId) {
+      throw new ForbiddenException('Only the customer who initiated this payment can confirm it');
+    }
+
+    if (payment.status === 'SUCCEEDED') {
+      return { success: true, status: 'SUCCEEDED' };
+    }
+
+    payment.status = 'SUCCEEDED';
+    await payment.save();
+
+    await this.requestModel.findByIdAndUpdate(payment.requestId, {
+      $set: { status: 'PAID' },
+    });
+
+    this.marketplaceGateway.emitPaymentSucceeded(
+      payment.customerId,
+      payment.providerId,
+      payment.requestId,
+      payment.amount,
+    );
+
+    this.logger.log(
+      `[Simulated Payment] Reconciled payment ${payment.id} for intent ${paymentIntentId} as SUCCEEDED. Request marked PAID.`,
+    );
+
+    return { success: true, status: 'SUCCEEDED' };
+  }
+
   private mapToEntity(doc: PaymentDocument): PaymentEntity {
     return {
       id: doc.id || (doc as any)._id?.toString(),

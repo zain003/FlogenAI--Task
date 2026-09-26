@@ -37,6 +37,7 @@ export function PaymentModal({
   onPaymentSuccess,
 }: PaymentModalProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [amountCents, setAmountCents] = useState<number>(0);
   const [isLoadingIntent, setIsLoadingIntent] = useState<boolean>(false);
   const [intentError, setIntentError] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export function PaymentModal({
         offerId: offer.id,
       });
       setClientSecret(response.clientSecret);
+      setPaymentIntentId(response.paymentIntentId);
       setAmountCents(response.amount);
     } catch (err: unknown) {
       if (err instanceof ApiClientError) {
@@ -71,6 +73,7 @@ export function PaymentModal({
       initPaymentIntent();
     } else {
       setClientSecret(null);
+      setPaymentIntentId(null);
       setIntentError(null);
       setIsLoadingIntent(false);
     }
@@ -215,6 +218,7 @@ export function PaymentModal({
               <StripeCheckoutForm
                 clientSecret={clientSecret}
                 amount={amountCents || Math.round(offer.price * 100)}
+                paymentIntentId={paymentIntentId || undefined}
                 onSuccess={() => {
                   if (onPaymentSuccess) {
                     onPaymentSuccess();
