@@ -64,3 +64,10 @@ FlogenAI/
    - Server-side room authorization for chat (`conversation:<id>`). Clients cannot join arbitrary rooms.
 5. **100% SQA Gate**:
    - Every feature must pass multi-layer automated tests (Frontend fake DOM, API, Backend logic, Database/concurrency) with formal reports saved in `feature-test-reports/`.
+
+---
+
+## Documentation & Runbooks
+
+- **[FLOW.md](file:///c:/Users/zaina/Desktop/FlogenAI/FLOW.md)**: Manual testing runbook and multi-actor walkthrough.
+- **[DEPLOYMENT.md](file:///c:/Users/zaina/Desktop/FlogenAI/DEPLOYMENT.md)**: Production deployment guide for Oracle Cloud Always Free and Vercel.
