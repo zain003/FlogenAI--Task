@@ -8,7 +8,7 @@ import {
   formatCurrency,
   formatRelativeDate,
 } from '@/lib/api-client';
-import { Clock, DollarSign, ArrowRight } from 'lucide-react';
+import { Clock, DollarSign, ArrowRight, MessageSquare } from 'lucide-react';
 
 export function RequestStatusBadge({ status }: { status: RequestStatus }) {
   const getBadgeStyle = () => {
@@ -55,6 +55,9 @@ export function RequestCard({ request, viewMode = 'provider', onClick }: Request
     }
   };
 
+  const isPaid = request.status === 'PAID';
+  const isAccepted = request.status === 'ACCEPTED';
+
   return (
     <div
       data-testid="request-card"
@@ -95,18 +98,43 @@ export function RequestCard({ request, viewMode = 'provider', onClick }: Request
           </div>
         </div>
 
-        <button
-          type="button"
-          data-testid="request-action-button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCardClick();
-          }}
-          className="inline-flex items-center space-x-1.5 rounded-md border border-gray-700 bg-gray-800/80 px-3 py-1.5 text-xs font-medium text-gray-200 transition hover:border-indigo-500 hover:bg-indigo-600 hover:text-white"
-        >
-          <span>{viewMode === 'provider' ? 'View / Make Offer' : 'View Offers'}</span>
-          <ArrowRight className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center space-x-2">
+          {isPaid && (
+            <button
+              type="button"
+              data-testid="request-chat-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/chat/${request.id}`);
+              }}
+              className="inline-flex items-center space-x-1.5 rounded-md border border-emerald-500/50 bg-emerald-600/30 px-3 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-600 hover:text-white cursor-pointer"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Open Chat</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            data-testid="request-action-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCardClick();
+            }}
+            className="inline-flex items-center space-x-1.5 rounded-md border border-gray-700 bg-gray-800/80 px-3 py-1.5 text-xs font-medium text-gray-200 transition hover:border-indigo-500 hover:bg-indigo-600 hover:text-white cursor-pointer"
+          >
+            <span>
+              {isPaid
+                ? 'View Details'
+                : isAccepted
+                  ? 'View Accepted'
+                  : viewMode === 'provider'
+                    ? 'View / Make Offer'
+                    : 'View Offers'}
+            </span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );

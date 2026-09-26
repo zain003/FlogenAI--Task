@@ -21,12 +21,23 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+export type ProviderFilterStatus = 'OPEN' | 'ACCEPTED' | 'PAID' | 'ALL' | 'COMPLETED';
+
+const STATUS_FILTERS: { label: string; value: ProviderFilterStatus }[] = [
+  { label: 'Open Requests', value: 'OPEN' },
+  { label: 'Accepted', value: 'ACCEPTED' },
+  { label: 'Paid & Active', value: 'PAID' },
+  { label: 'All Jobs', value: 'ALL' },
+  { label: 'Completed', value: 'COMPLETED' },
+];
+
 export default function ProviderBrowsePage() {
   const router = useRouter();
   const authContext = useContext(AuthContext);
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { socket, isConnected } = useSocket();
   const [requests, setRequests] = useState<ServiceRequestEntity[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<ProviderFilterStatus>('OPEN');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newlyArrivedId, setNewlyArrivedId] = useState<string | null>(null);
@@ -43,25 +54,36 @@ export default function ProviderBrowsePage() {
     }
   }, [authContext, isAuthLoading, isAuthenticated, user, router]);
 
-  // ─── Initial fetch ────────────────────────────────────────────────────────
+  // ─── Fetch requests by filter status ──────────────────────────────────────
+
+  const fetchRequests = useCallback(
+    async (statusToFetch: ProviderFilterStatus = selectedStatus): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const query =
+          statusToFetch === 'ALL'
+            ? undefined
+            : { status: statusToFetch as any };
+        const response = await apiClient.requests.getAll(query);
+        setRequests(response.data || []);
+      } catch (err: unknown) {
+        if (err instanceof ApiClientError) {
+          setError(err.message);
+        } else {
+          setError('Failed to fetch marketplace requests');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [selectedStatus],
+  );
 
   const fetchOpenRequests = useCallback(async (): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await apiClient.requests.getAll({ status: 'OPEN' });
-      setRequests(response.data || []);
-    } catch (err: unknown) {
-      if (err instanceof ApiClientError) {
-        setError(err.message);
-      } else {
-        setError('Failed to fetch open marketplace requests');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    return fetchRequests(selectedStatus);
+  }, [fetchRequests, selectedStatus]);
 
   useEffect(() => {
     if (authContext && (isAuthLoading || !isAuthenticated || user?.role !== 'provider')) {
@@ -69,8 +91,13 @@ export default function ProviderBrowsePage() {
     }
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
-    fetchOpenRequests();
-  }, [authContext, isAuthLoading, isAuthenticated, user?.role, fetchOpenRequests]);
+    fetchRequests('OPEN');
+  }, [authContext, isAuthLoading, isAuthenticated, user?.role, fetchRequests]);
+
+  const handleStatusFilterChange = (status: ProviderFilterStatus) => {
+    setSelectedStatus(status);
+    fetchRequests(status);
+  };
 
   // ─── Real-time listener: request:created ─────────────────────────────────
   //
@@ -87,6 +114,11 @@ export default function ProviderBrowsePage() {
       if (!payload?.request?.id) return;
 
       const newReq = payload.request;
+
+      // Only inject if matches current filter or viewing ALL
+      if (selectedStatus !== 'OPEN' && selectedStatus !== 'ALL') {
+        return;
+      }
 
       setRequests((prev) => {
         // Idempotency: deduplicate incoming requests by ID
@@ -108,7 +140,7 @@ export default function ProviderBrowsePage() {
     return () => {
       socket.off('request:created', handleRequestCreated);
     };
-  }, [socket]);
+  }, [socket, selectedStatus, authContext, isAuthenticated, user?.role]);
 
   // ─── Real-time listener: request:closed ──────────────────────────────────
   //
@@ -139,6 +171,30 @@ export default function ProviderBrowsePage() {
     };
   }, [socket]);
 
+  // ─── Real-time listener: payment:succeeded ───────────────────────────────
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handlePaymentSucceeded = (payload: { requestId: string }): void => {
+      if (!payload?.requestId) return;
+
+      setRequests((prev) =>
+        prev.map((req) =>
+          req.id === payload.requestId
+            ? { ...req, status: 'PAID' }
+            : req,
+        ),
+      );
+    };
+
+    socket.on('payment:succeeded', handlePaymentSucceeded);
+
+    return () => {
+      socket.off('payment:succeeded', handlePaymentSucceeded);
+    };
+  }, [socket]);
+
   // ─── Reconnect handler ────────────────────────────────────────────────────
   //
   // Re-fetch the full feed on socket reconnect to reconcile any missed events.
@@ -147,7 +203,7 @@ export default function ProviderBrowsePage() {
     if (!socket) return;
 
     const handleReconnect = (): void => {
-      fetchOpenRequests();
+      fetchRequests(selectedStatus);
     };
 
     socket.on('reconnect', handleReconnect);
@@ -155,7 +211,7 @@ export default function ProviderBrowsePage() {
     return () => {
       socket.off('reconnect', handleReconnect);
     };
-  }, [socket, fetchOpenRequests]);
+  }, [socket, fetchRequests, selectedStatus]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -180,10 +236,16 @@ export default function ProviderBrowsePage() {
             <span>Provider Marketplace</span>
           </div>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Open Service Requests
+            {selectedStatus === 'OPEN'
+              ? 'Open Service Requests'
+              : selectedStatus === 'PAID'
+                ? 'Paid & Active Requests'
+                : selectedStatus === 'ACCEPTED'
+                  ? 'Accepted Service Requests'
+                  : 'Marketplace Service Requests'}
           </h1>
           <p className="mt-1 text-sm text-gray-400">
-            Explore live customer requests, inspect job requirements, and submit competitive bids.
+            Explore live customer requests, inspect job requirements, track accepted jobs, and open real-time chat.
           </p>
         </div>
 
@@ -205,7 +267,7 @@ export default function ProviderBrowsePage() {
             onClick={fetchOpenRequests}
             disabled={isLoading}
             aria-label="Refresh marketplace"
-            className="inline-flex items-center space-x-2 rounded-lg border border-[#1f293d] bg-[#111827] px-3.5 py-2 text-xs font-medium text-gray-300 transition hover:border-gray-600 hover:text-white disabled:opacity-50"
+            className="inline-flex items-center space-x-2 rounded-lg border border-[#1f293d] bg-[#111827] px-3.5 py-2 text-xs font-medium text-gray-300 transition hover:border-gray-600 hover:text-white disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
@@ -213,13 +275,38 @@ export default function ProviderBrowsePage() {
         </div>
       </div>
 
-      {/* Subheader / Status Bar */}
-      <div className="mb-6 flex items-center justify-between">
+      {/* Subheader / Status Bar & Interactive Filter Tabs */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        {/* Status Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center space-x-1.5 text-xs text-gray-400 mr-1">
+            <Filter className="h-3.5 w-3.5 text-gray-500" />
+            <span>Status:</span>
+          </div>
+          {STATUS_FILTERS.map((filter) => {
+            const isActive = selectedStatus === filter.value;
+            return (
+              <button
+                key={filter.value}
+                type="button"
+                data-testid={`filter-status-${filter.value.toLowerCase()}`}
+                onClick={() => handleStatusFilterChange(filter.value)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer ${
+                  isActive
+                    ? 'border border-emerald-500/60 bg-emerald-500/20 text-emerald-300 font-semibold shadow-sm'
+                    : 'border border-gray-800 bg-[#111827] text-gray-400 hover:border-gray-700 hover:text-white'
+                }`}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="flex items-center space-x-2 text-xs text-gray-400">
-          <Filter className="h-3.5 w-3.5 text-gray-500" />
           <span>Showing Status:</span>
-          <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-400">
-            OPEN
+          <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-400 uppercase">
+            {selectedStatus}
           </span>
           <span className="text-gray-500">•</span>
           <span>{requests.length} available jobs</span>
@@ -235,6 +322,7 @@ export default function ProviderBrowsePage() {
           </div>
         )}
       </div>
+
 
       {error && (
         <div

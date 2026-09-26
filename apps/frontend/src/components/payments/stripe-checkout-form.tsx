@@ -109,6 +109,13 @@ export function StripeCheckoutForm({
         (result.paymentIntent.status === 'succeeded' ||
           result.paymentIntent.status === 'processing')
       ) {
+        if (paymentIntentId) {
+          try {
+            await apiClient.payments.simulateSuccess(paymentIntentId);
+          } catch {
+            // Webhook may have already reconciled or runner handles it
+          }
+        }
         setIsSuccess(true);
         setIsProcessing(false);
         onSuccess();

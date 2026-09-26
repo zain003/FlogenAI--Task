@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   OfferEntity,
   OfferStatus,
@@ -8,7 +9,17 @@ import {
   formatCurrency,
   formatRelativeDate,
 } from '@/lib/api-client';
-import { Check, CheckCircle2, Clock, CreditCard, DollarSign, Loader2, User, XCircle } from 'lucide-react';
+import {
+  Check,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Loader2,
+  MessageSquare,
+  User,
+  XCircle,
+} from 'lucide-react';
 
 export interface OfferCardProps {
   offer: OfferEntity;
@@ -65,6 +76,7 @@ export function OfferCard({
   isAccepting = false,
   disabled = false,
 }: OfferCardProps) {
+  const router = useRouter();
   const isAccepted = offer.status === 'ACCEPTED';
   const isRejected = offer.status === 'REJECTED';
   const isPending = offer.status === 'PENDING';
@@ -183,6 +195,32 @@ export function OfferCard({
             >
               <CreditCard className="h-4 w-4" />
               <span>Proceed to Payment</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Provider Action Footer for Winning Accepted Offer */}
+      {!isCustomerOwner && isAccepted && (
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#1f293d] pt-4">
+          <div className="text-xs text-emerald-400 font-medium flex items-center space-x-1.5">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>
+              {requestStatus === 'PAID'
+                ? 'Winning Proposal • Escrow Payment Confirmed'
+                : 'Winning Proposal • Accepted by Customer'}
+            </span>
+          </div>
+
+          {(requestStatus === 'PAID' || requestStatus === 'ACCEPTED') && (
+            <button
+              type="button"
+              data-testid={`provider-chat-button-${offer.id}`}
+              onClick={() => router.push(`/chat/${offer.requestId}`)}
+              className="inline-flex items-center space-x-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-md transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span>Open Chat</span>
             </button>
           )}
         </div>
